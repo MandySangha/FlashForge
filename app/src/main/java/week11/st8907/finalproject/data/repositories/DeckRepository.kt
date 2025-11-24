@@ -56,6 +56,29 @@ class DeckRepository {
         }
     }
 
+    // READ - Get decks by category
+    fun getDecksByCategory(userId: String, category: String): Flow<List<Deck>> = callbackFlow {
+        val listener = decksCollection
+            .whereEqualTo("userId", userId)
+            .whereEqualTo("category", category)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    trySend(emptyList())
+                    return@addSnapshotListener
+                }
+
+                val decks = snapshot?.documents?.mapNotNull { document ->
+                    document.toObject<Deck>()
+                } ?: emptyList()
+
+                trySend(decks)
+            }
+
+        awaitClose {
+            listener.remove()
+        }
+    }
+
     // READ - Get single deck by ID
     suspend fun getDeck(deckId: String): Result<Deck> {
         return try {
