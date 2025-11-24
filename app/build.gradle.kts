@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     id("com.google.gms.google-services")
+    kotlin("kapt")
 }
 
 android {
@@ -65,7 +66,20 @@ dependencies {
     // Firebase Authentication
     implementation("com.google.firebase:firebase-auth")
 
+    // Firebase Firestore
+    implementation("com.google.firebase:firebase-firestore-ktx")
+
     // Coroutines (needed for await())
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
 
+    // Lifecycle ViewModel (for ViewModel scope)
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.7.0")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.7.0")
+
+}
+
+kapt {
+    correctErrorTypes = true
 }
