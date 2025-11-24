@@ -11,16 +11,17 @@ import androidx.compose.ui.Modifier
  * form input screens. Helps maintain consistent UI across the app.
  */
 
+
 @Composable
 fun AppTextField(
     value: String,
-    onValueChange: (String) -> Unit,
+    onValueChange: (String) -> Unit,   // IMPORTANT
     label: String,
     modifier: Modifier = Modifier
 ) {
     OutlinedTextField(
         value = value,
-        onValueChange = onValueChange,
+        onValueChange = { onValueChange(it) },   // <— gives “it”
         label = { Text(label) },
         modifier = modifier
     )

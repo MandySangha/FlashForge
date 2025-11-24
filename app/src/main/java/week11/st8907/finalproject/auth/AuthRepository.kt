@@ -2,23 +2,25 @@ package week11.st8907.finalproject.auth
 
 /**
  * AuthRepository.kt
- * -------------------------------------------------------------
- * This repository will hold all authentication operations.
- * For Step 4c, we only define method placeholders. Firebase
- * implementations will be added in Step 4a.
+ * -------------------------
+ * Repository layer for authentication.
+ * Step 4c only requires the structure, not Firebase logic.
  */
 
 class AuthRepository {
 
-    suspend fun login(email: String, password: String): AuthState {
-        return AuthState.Idle // Placeholder for Step 4
+    suspend fun login(email: String, password: String): AuthResult<Unit> {
+        // Firebase logic will be added in Step 4a
+        return AuthResult.Loading
     }
 
-    suspend fun register(email: String, password: String): AuthState {
-        return AuthState.Idle // Placeholder for Step 4
+    suspend fun register(email: String, password: String): AuthResult<Unit> {
+        // Firebase logic will be added in Step 4a
+        return AuthResult.Loading
     }
 
-    suspend fun resetPassword(email: String): AuthState {
-        return AuthState.Idle // Placeholder for Step 4
+    suspend fun resetPassword(email: String): AuthResult<Unit> {
+        // Firebase logic will be added in Step 4a
+        return AuthResult.Loading
     }
 }

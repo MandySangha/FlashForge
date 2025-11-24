@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "844663474000",
+    "project_id": "flashforge-4a990",
+    "storage_bucket": "flashforge-4a990.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:844663474000:android:20276655e1f6b2364c8e55",
+        "android_client_info": {
+          "package_name": "week11.st8907.finalproject"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD76nujDbIx7fSwRsMoKJU3cjAVLoablZM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -20,57 +20,39 @@ import week11.st8907.finalproject.auth.AuthState
  * authState. Firebase logic will be implemented in Step 4a.
  */
 
-@Composable
-fun LoginScreen(
-    navController: NavController,
-    viewModel: AuthViewModel = AuthViewModel() // simple injection for Step 4
+
+
+import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.tasks.await
+
+class AuthRepository(
+    private val auth: FirebaseAuth = FirebaseAuth.getInstance()
 ) {
-    val authState by viewModel.authState.collectAsState()
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-
-        Text(
-            text = "Login Screen",
-            fontSize = 28.sp,
-            modifier = Modifier.padding(bottom = 40.dp)
-        )
-
-        // Observing state (Step 4c only)
-        when (authState) {
-            is AuthState.Loading -> Text("Loading...")
-            is AuthState.Error -> Text("Error occurred")
-            else -> {}
+    suspend fun login(email: String, password: String): AuthState {
+        return try {
+            auth.signInWithEmailAndPassword(email, password).await()
+            AuthState.Success("Login Successful")
+        } catch (e: Exception) {
+            AuthState.Error(e.message ?: "Login Failed")
         }
+    }
 
-        Button(
-            onClick = { navController.navigate(Routes.Home) },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Go to Home")
+    suspend fun register(email: String, password: String): AuthState {
+        return try {
+            auth.createUserWithEmailAndPassword(email, password).await()
+            AuthState.Success("Registration Successful")
+        } catch (e: Exception) {
+            AuthState.Error(e.message ?: "Registration Failed")
         }
+    }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Button(
-            onClick = { navController.navigate(Routes.Register) },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Go to Register")
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Button(
-            onClick = { navController.navigate(Routes.ForgotPassword) },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Forgot Password")
+    suspend fun resetPassword(email: String): AuthState {
+        return try {
+            auth.sendPasswordResetEmail(email).await()
+            AuthState.Success("Password reset email sent")
+        } catch (e: Exception) {
+            AuthState.Error(e.message ?: "Reset Failed")
         }
     }
 }

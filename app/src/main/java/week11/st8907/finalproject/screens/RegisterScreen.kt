@@ -10,6 +10,10 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import week11.st8907.finalproject.auth.AuthViewModel
 import week11.st8907.finalproject.auth.AuthState
+import week11.st8907.finalproject.components.AppTextField
+import week11.st8907.finalproject.components.LoadingDialog
+import week11.st8907.finalproject.components.PrimaryButton
+import week11.st8907.finalproject.components.SecondaryButton
 import week11.st8907.finalproject.navigation.Routes
 
 /**
@@ -19,6 +23,7 @@ import week11.st8907.finalproject.navigation.Routes
  * and authState is observed, preparing for Firebase in Step 4a.
  */
 
+
 @Composable
 fun RegisterScreen(
     navController: NavController,
@@ -26,40 +31,66 @@ fun RegisterScreen(
 ) {
     val authState by viewModel.authState.collectAsState()
 
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+
+    if (authState is AuthState.Success) {
+        LaunchedEffect(true) {
+            navController.navigate(Routes.Login) {
+                popUpTo(Routes.Register) { inclusive = true }
+            }
+            viewModel.resetState()
+        }
+    }
+
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
+        modifier = Modifier.fillMaxSize().padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
 
-        Text(
-            text = "Register Screen",
-            fontSize = 28.sp,
-            modifier = Modifier.padding(bottom = 40.dp)
+        Text("Register", fontSize = 28.sp)
+
+        Spacer(Modifier.height(16.dp))
+
+        AppTextField(
+            value = email,
+            onValueChange = { email = it },
+            label = "Email",
+            modifier = Modifier.fillMaxWidth()
         )
 
-        when (authState) {
-            is AuthState.Loading -> Text("Loading...")
-            is AuthState.Error -> Text("Registration Error")
-            else -> {}
-        }
+        Spacer(Modifier.height(16.dp))
 
-        Button(
-            onClick = { navController.navigate(Routes.Login) },
+        AppTextField(
+            value = password,
+            onValueChange = { password = it },
+            label = "Password",
             modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Back to Login")
-        }
+        )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(Modifier.height(20.dp))
 
-        Button(
-            onClick = { navController.navigate(Routes.ForgotPassword) },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Forgot Password")
-        }
+        PrimaryButton(
+            text = "Create Account",
+            modifier = Modifier.fillMaxWidth(),
+            onClick = { viewModel.register(email, password) }
+        )
+
+        Spacer(Modifier.height(12.dp))
+
+        SecondaryButton(
+            text = "Back to Login",
+            modifier = Modifier.fillMaxWidth(),
+            onClick = { navController.navigate(Routes.Login) }
+        )
+    }
+
+    if (authState is AuthState.Loading) LoadingDialog()
+    if (authState is AuthState.Error) {
+        Text(
+            text = (authState as AuthState.Error).error,
+            color = MaterialTheme.colorScheme.error
+        )
     }
 }

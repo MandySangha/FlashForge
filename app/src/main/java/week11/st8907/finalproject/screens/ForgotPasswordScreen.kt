@@ -10,14 +10,19 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import week11.st8907.finalproject.auth.AuthState
 import week11.st8907.finalproject.auth.AuthViewModel
+import week11.st8907.finalproject.components.LoadingDialog
+import week11.st8907.finalproject.components.PrimaryButton
+import week11.st8907.finalproject.components.SecondaryButton
 import week11.st8907.finalproject.navigation.Routes
+import week11.st8907.finalproject.components.AppTextField
+
 
 /**
  * ForgotPasswordScreen.kt
  * -------------------------------------------------------------
- * Password reset placeholder with ViewModel integration. StateFlow
- * observation is added for Step 4c, and Firebase reset logic will
- * be added in Step 4a.
+ * Allows users to request a password reset email. Uses AuthViewModel
+ * and observes state via StateFlow. Firebase logic is already handled
+ * in the AuthRepository.
  */
 
 @Composable
@@ -26,6 +31,16 @@ fun ForgotPasswordScreen(
     viewModel: AuthViewModel = AuthViewModel()
 ) {
     val authState by viewModel.authState.collectAsState()
+
+    var email by remember { mutableStateOf("") }
+
+    // Navigate back to Login when reset email is sent
+    if (authState is AuthState.Success) {
+        LaunchedEffect(true) {
+            navController.navigate(Routes.Login)
+            viewModel.resetState()
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -36,31 +51,48 @@ fun ForgotPasswordScreen(
     ) {
 
         Text(
-            text = "Forgot Password Screen",
+            text = "Reset Password",
             fontSize = 28.sp,
-            modifier = Modifier.padding(bottom = 40.dp)
+            modifier = Modifier.padding(bottom = 32.dp)
         )
 
-        when (authState) {
-            is AuthState.Loading -> Text("Sending reset email...")
-            is AuthState.Error -> Text("Reset Error")
-            else -> {}
-        }
-
-        Button(
-            onClick = { navController.navigate(Routes.Login) },
+        AppTextField(
+            value = email,
+            onValueChange = { email = it },      // FIXED
+            label = "Email",
             modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Back to Login")
-        }
+        )
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        PrimaryButton(
+            text = "Send Reset Email",
+            modifier = Modifier.fillMaxWidth(),
+            onClick = {
+                viewModel.resetPassword(email)
+            }
+        )
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        Button(
-            onClick = { navController.navigate(Routes.Register) },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Go to Register")
-        }
+        SecondaryButton(
+            text = "Back to Login",
+            modifier = Modifier.fillMaxWidth(),
+            onClick = { navController.navigate(Routes.Login) }
+        )
+    }
+
+    // Loading Dialog
+    if (authState is AuthState.Loading) {
+        LoadingDialog()
+    }
+
+    // Error Text
+    if (authState is AuthState.Error) {
+        Text(
+            text = (authState as AuthState.Error).error,
+            color = MaterialTheme.colorScheme.error,
+            modifier = Modifier.padding(top = 16.dp)
+        )
     }
 }
