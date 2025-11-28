@@ -1,33 +1,41 @@
 package week11.st8907.finalproject.navigation
 
-/**
- * Routes.kt
- * -------------------------------
- * This file defines all navigation routes used across the FlashForge app.
- * Keeping routes in one place helps maintain clean structure, prevents typos,
- * and makes the navigation graph easy to expand as the project grows.
- */
-
 object Routes {
-    const val Splash = "splash_screen"
-    const val Login = "login_screen"
-    const val Register = "register_screen"
-    const val ForgotPassword = "forgot_password_screen"
 
-    const val Home = "home_screen"
-    const val CreateFlashCard = "create_flashcard_screen"
-    const val ScanFlashCard = "scan_flashcard_screen"
+    // Auth
+    const val Splash = "splash"
+    const val Login = "login"
+    const val Register = "register"
+    const val ForgotPassword = "forgot_password"
 
-    const val FlashCardList = "flashcard_list_screen"
-    const val FlashCardDetail = "flashcard_detail_screen"
-    const val EditFlashCard = "edit_flashcard_screen"
+    // Home
+    const val Home = "home"
 
-    const val StudyMode = "study_mode_screen"
-    const val QuizMode = "quiz_mode_screen"
-    const val QuizResult = "quiz_result_screen"
+    // Flashcards
+    const val CreateFlashCard = "create_flashcard"
+    const val ScanFlashCard = "scan_flashcard"
 
-    const val Stats = "stats_screen"
-    const val Settings = "settings_screen"
-    const val Profile = "profile_screen"
-    const val SearchFlashCard = "search_flashcard_screen"
+    // Firestore-required cardId routes
+    const val FlashCardList = "flashcard_list"
+    const val FlashCardDetail = "flashcard_detail"
+    const val EditFlashCard = "edit_flashcard"
+    const val StudyMode = "study_mode"
+
+    // Quiz
+    const val QuizMode = "quiz_mode"
+    const val QuizResult = "quiz_result"
+
+    // Extra pages
+    const val Stats = "stats"
+    const val Settings = "settings"
+    const val Profile = "profile"
+    const val SearchFlashCard = "search_flashcard"
+
+    // ------------------------
+    // Route Builders With Args
+    // ------------------------
+
+    fun flashcardDetail(cardId: String) = "$FlashCardDetail/$cardId"
+    fun editFlashcard(cardId: String) = "$EditFlashCard/$cardId"
+    fun studyMode(cardId: String) = "$StudyMode/$cardId"
 }

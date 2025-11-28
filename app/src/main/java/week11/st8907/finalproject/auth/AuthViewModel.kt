@@ -6,98 +6,59 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-/**
- * AuthViewModel.kt
- * -------------------------
- * Manages AuthState and exposes functions used by the UI.
- * No Firebase logic yet — only structure required for Step 4c.
- */
-
 class AuthViewModel(
     private val repository: AuthRepository = AuthRepository()
 ) : ViewModel() {
 
-    private val _state = MutableStateFlow(AuthState())
-    val state: StateFlow<AuthState> = _state
+    private val _authState = MutableStateFlow<AuthState>(AuthState.Idle)
+    val authState: StateFlow<AuthState> = _authState
 
-    fun updateEmail(newEmail: String) {
-        _state.value = _state.value.copy(email = newEmail)
+    private val _email = MutableStateFlow("")
+    val email: StateFlow<String> = _email
+
+    private val _password = MutableStateFlow("")
+    val password: StateFlow<String> = _password
+
+    private val _confirmPassword = MutableStateFlow("")
+    val confirmPassword: StateFlow<String> = _confirmPassword
+
+    fun updateEmail(value: String) {
+        _email.value = value
     }
 
-    fun updatePassword(newPassword: String) {
-        _state.value = _state.value.copy(password = newPassword)
+    fun updatePassword(value: String) {
+        _password.value = value
     }
 
-    fun updateConfirmPassword(newValue: String) {
-        _state.value = _state.value.copy(confirmPassword = newValue)
+    fun updateConfirmPassword(value: String) {
+        _confirmPassword.value = value
     }
 
     fun login() {
         viewModelScope.launch {
-            _state.value = _state.value.copy(isLoading = true, errorMessage = null)
-            when (val result = repository.login(_state.value.email, _state.value.password)) {
-                is AuthResult.Success -> {
-                    _state.value = _state.value.copy(
-                        isLoading = false,
-                        success = true
-                    )
-                }
-                is AuthResult.Error -> {
-                    _state.value = _state.value.copy(
-                        isLoading = false,
-                        errorMessage = result.message
-                    )
-                }
-                AuthResult.Loading -> {
-                    _state.value = _state.value.copy(isLoading = true)
-                }
-            }
+            _authState.value = AuthState.Loading
+            val result = repository.login(email.value, password.value)
+            _authState.value = result
         }
     }
 
     fun register() {
         viewModelScope.launch {
-            _state.value = _state.value.copy(isLoading = true, errorMessage = null)
-            when (val result = repository.register(_state.value.email, _state.value.password)) {
-                is AuthResult.Success -> {
-                    _state.value = _state.value.copy(
-                        isLoading = false,
-                        success = true
-                    )
-                }
-                is AuthResult.Error -> {
-                    _state.value = _state.value.copy(
-                        isLoading = false,
-                        errorMessage = result.message
-                    )
-                }
-                AuthResult.Loading -> {
-                    _state.value = _state.value.copy(isLoading = true)
-                }
-            }
+            _authState.value = AuthState.Loading
+            val result = repository.register(email.value, password.value)
+            _authState.value = result
         }
     }
 
     fun resetPassword() {
         viewModelScope.launch {
-            _state.value = _state.value.copy(isLoading = true, errorMessage = null)
-            when (val result = repository.resetPassword(_state.value.email)) {
-                is AuthResult.Success -> {
-                    _state.value = _state.value.copy(
-                        isLoading = false,
-                        success = true
-                    )
-                }
-                is AuthResult.Error -> {
-                    _state.value = _state.value.copy(
-                        isLoading = false,
-                        errorMessage = result.message
-                    )
-                }
-                AuthResult.Loading -> {
-                    _state.value = _state.value.copy(isLoading = true)
-                }
-            }
+            _authState.value = AuthState.Loading
+            val result = repository.resetPassword(email.value)
+            _authState.value = result
         }
+    }
+
+    fun clearState() {
+        _authState.value = AuthState.Idle
     }
 }
