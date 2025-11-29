@@ -17,7 +17,6 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import week11.st8907.finalproject.ui.theme.NeonPink
 import week11.st8907.finalproject.ui.theme.NeonPurple
@@ -27,25 +26,30 @@ import week11.st8907.finalproject.viewmodels.FlashcardViewModel
 @Composable
 fun StudyModeScreen(
     navController: NavController,
-    cardId: String,
-    viewModel: FlashcardViewModel = viewModel()
-
+    viewModel: FlashcardViewModel
 ) {
     val cards by viewModel.cards.collectAsState()
 
-    val card = cards.find { it.cardId == cardId }
-
-    if (card == null) {
+    if (cards.isEmpty()) {
         Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
-            Text("Loading...", color = NeonText)
+            Text(
+                "No flashcards available.",
+                color = NeonText,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.SemiBold
+            )
         }
         return
     }
 
+    var index by remember { mutableStateOf(0) }
     var flipped by remember { mutableStateOf(false) }
+
+    val card = cards[index]
+
     val rotation by animateFloatAsState(if (flipped) 180f else 0f)
 
     Column(
@@ -74,13 +78,23 @@ fun StudyModeScreen(
             )
         }
 
+        Spacer(Modifier.height(14.dp))
+
+        // PROGRESS — e.g., "1 / 10"
+        Text(
+            text = "${index + 1} / ${cards.size}",
+            color = NeonPink,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold
+        )
+
         Spacer(Modifier.height(20.dp))
 
-        // CARD
+        // FLASHCARD BOX
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(280.dp)
+                .height(320.dp)
                 .graphicsLayer {
                     rotationY = rotation
                     cameraDistance = 12f * density
@@ -91,25 +105,64 @@ fun StudyModeScreen(
                     ),
                     RoundedCornerShape(20.dp)
                 )
-                .clickable { flipped = !flipped }
+                .clickable {
+                    flipped = !flipped
+                }
                 .padding(24.dp),
             contentAlignment = Alignment.Center
         ) {
             if (rotation <= 90f) {
                 Text(
-                    card.question,
+                    text = card.question,
                     color = Color.White,
-                    fontSize = 22.sp,
+                    fontSize = 24.sp,
                     fontWeight = FontWeight.SemiBold
                 )
             } else {
                 Text(
-                    card.answer,
+                    text = card.answer,
                     color = NeonPurple,
-                    fontSize = 22.sp,
+                    fontSize = 24.sp,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.graphicsLayer { rotationY = 180f }
                 )
+            }
+        }
+
+        Spacer(Modifier.height(30.dp))
+
+        // NAVIGATION BUTTONS
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+
+            // PREVIOUS
+            Button(
+                onClick = {
+                    if (index > 0) {
+                        index--
+                        flipped = false
+                    }
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = NeonPurple),
+                shape = RoundedCornerShape(14.dp)
+            ) {
+                Text("Previous", color = Color.White)
+            }
+
+            // NEXT
+            Button(
+                onClick = {
+                    if (index < cards.size - 1) {
+                        index++
+                        flipped = false
+                    }
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = NeonPink),
+                shape = RoundedCornerShape(14.dp)
+            ) {
+                Text("Next", color = Color.White)
             }
         }
     }

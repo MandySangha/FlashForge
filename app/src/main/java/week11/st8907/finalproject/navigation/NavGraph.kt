@@ -63,17 +63,31 @@ fun AppNavGraph(navController: NavHostController) {
         }
 
         // STUDY MODE
-        composable(
-            route = "${Routes.StudyMode}/{cardId}",
-            arguments = listOf(navArgument("cardId") { type = NavType.StringType })
-        ) { entry ->
-            val cardId = entry.arguments?.getString("cardId") ?: ""
-            StudyModeScreen(navController, cardId, flashcardViewModel)
+        composable(Routes.StudyMode) {
+            StudyModeScreen(navController, flashcardViewModel)
         }
 
+
         // Quiz
-        composable(Routes.QuizMode) { QuizModeScreen(navController) }
-        composable(Routes.QuizResult) { QuizResultScreen(navController) }
+        composable(
+            route = "${Routes.QuizResult}/{score}/{total}"
+        ) { entry ->
+            val score = entry.arguments?.getString("score")?.toIntOrNull() ?: 0
+            val total = entry.arguments?.getString("total")?.toIntOrNull() ?: 0
+            QuizResultScreen(navController, score, total)
+        }
+
+        composable(Routes.QuizMode) {
+            QuizModeScreen(navController, flashcardViewModel)
+        }
+
+        composable("${Routes.QuizResult}/{score}/{total}") { entry ->
+            val score = entry.arguments?.getString("score")?.toIntOrNull() ?: 0
+            val total = entry.arguments?.getString("total")?.toIntOrNull() ?: 0
+            QuizResultScreen(navController, score, total)
+        }
+
+
 
         // Other
         composable(Routes.Stats) { StatsScreen(navController) }

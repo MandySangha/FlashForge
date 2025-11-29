@@ -21,12 +21,11 @@ import week11.st8907.finalproject.navigation.Routes
 import week11.st8907.finalproject.ui.theme.*
 
 @Composable
-fun QuizResultScreen(navController: NavController) {
-
-    // Placeholder static results
-    val score = 8
-    val total = 10
-
+fun QuizResultScreen(
+    navController: NavController,
+    score: Int,
+    total: Int
+) {
     var pop by remember { mutableStateOf(false) }
     val animatedScale by animateFloatAsState(if (pop) 1.05f else 1f)
 
@@ -47,7 +46,7 @@ fun QuizResultScreen(navController: NavController) {
             modifier = Modifier.padding(bottom = 16.dp)
         )
 
-        // Score Card
+        // SCORE CARD
         Box(
             modifier = Modifier
                 .scale(animatedScale)
@@ -67,8 +66,13 @@ fun QuizResultScreen(navController: NavController) {
                     fontSize = 50.sp,
                     fontWeight = FontWeight.ExtraBold
                 )
+
                 Text(
-                    "Great job! Keep practicing.",
+                    when {
+                        score == total -> "Perfect Score! 🔥"
+                        score >= total * 0.7 -> "Great job! Keep going!"
+                        else -> "Keep practicing, you got this!"
+                    },
                     color = Color.White,
                     fontSize = 18.sp
                 )
@@ -77,7 +81,6 @@ fun QuizResultScreen(navController: NavController) {
 
         Spacer(Modifier.height(35.dp))
 
-        // Study Again Button
         NeonButton(
             text = "Study Again",
             onClick = { navController.navigate(Routes.StudyMode) }
@@ -85,10 +88,13 @@ fun QuizResultScreen(navController: NavController) {
 
         Spacer(Modifier.height(16.dp))
 
-        // Back Home Button
         NeonButton(
             text = "Back to Home",
-            onClick = { navController.navigate(Routes.Home) }
+            onClick = {
+                navController.navigate(Routes.Home) {
+                    popUpTo(Routes.Home) { inclusive = true }
+                }
+            }
         )
     }
 }
@@ -103,7 +109,6 @@ fun NeonButton(text: String, onClick: () -> Unit) {
                 Brush.horizontalGradient(listOf(NeonPurple, NeonPink)),
                 RoundedCornerShape(16.dp)
             )
-            .padding(1.dp)
             .clickableNoRipple { onClick() },
         contentAlignment = Alignment.Center
     ) {
@@ -112,8 +117,10 @@ fun NeonButton(text: String, onClick: () -> Unit) {
 }
 
 @Composable
-fun Modifier.clickableNoRipple(onClick: () -> Unit): Modifier = this.then(
-    Modifier.clickable(enabled = true, indication = null, interactionSource = remember { MutableInteractionSource() }) {
-        onClick()
-    }
-)
+fun Modifier.clickableNoRipple(onClick: () -> Unit): Modifier =
+    this.then(
+        Modifier.clickable(
+            indication = null,
+            interactionSource = remember { MutableInteractionSource() }
+        ) { onClick() }
+    )
