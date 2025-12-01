@@ -8,12 +8,12 @@ import androidx.navigation.compose.composable
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import week11.st8907.finalproject.screens.*
-import week11.st8907.finalproject.viewmodels.FlashcardViewModel
+import week11.st8907.finalproject.data.viewmodels.FlashcardViewModel
 
 @Composable
 fun AppNavGraph(navController: NavHostController) {
 
-    // ⭐ ONE shared ViewModel for ALL flashcard screens
+    // One shared ViewModel for ALL flashcard screens
     val flashcardViewModel: FlashcardViewModel = viewModel()
 
     NavHost(
@@ -54,12 +54,9 @@ fun AppNavGraph(navController: NavHostController) {
         }
 
         // EDIT
-        composable(
-            route = "${Routes.EditFlashCard}/{cardId}",
-            arguments = listOf(navArgument("cardId") { type = NavType.StringType })
-        ) { entry ->
-            val cardId = entry.arguments?.getString("cardId") ?: ""
-            EditFlashCardScreen(navController, cardId, flashcardViewModel)
+
+        composable("edit_profile") {
+            EditProfileScreen(navController = navController)
         }
 
         // STUDY MODE
@@ -87,12 +84,11 @@ fun AppNavGraph(navController: NavHostController) {
             QuizResultScreen(navController, score, total)
         }
 
-
-
         // Other
         composable(Routes.Stats) { StatsScreen(navController) }
         composable(Routes.Settings) { SettingsScreen(navController) }
         composable(Routes.Profile) { ProfileScreen(navController) }
+        composable(route = Routes.EditProfile) { EditProfileScreen(navController = navController) }
 
         // Search
         composable(Routes.SearchFlashCard) {

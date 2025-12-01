@@ -3,6 +3,7 @@ package week11.st8907.finalproject.screens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -19,18 +20,17 @@ import week11.st8907.finalproject.navigation.Routes
 import week11.st8907.finalproject.ui.theme.NeonPink
 import week11.st8907.finalproject.ui.theme.NeonPurple
 import week11.st8907.finalproject.ui.theme.NeonText
-import week11.st8907.finalproject.viewmodel.UserViewModel
-import week11.st8907.finalproject.viewmodels.FlashcardViewModel
-
+import week11.st8907.finalproject.data.viewmodels.FlashcardViewModel
+import week11.st8907.finalproject.data.viewmodels.ProfileViewModel
 
 @Composable
 fun HomeScreen(
     navController: NavController,
-    userVM: UserViewModel = viewModel(),
+    profileVM: ProfileViewModel = viewModel(),
     cardVM: FlashcardViewModel = viewModel()
 ) {
-    val user by userVM.user.collectAsState()
-    val flashcards by cardVM.cards.collectAsState()
+    val currentUser by profileVM.currentUser.collectAsState()
+    val userFlashcards by cardVM.userFlashcards.collectAsState()
 
     Column(
         modifier = Modifier
@@ -39,16 +39,39 @@ fun HomeScreen(
         verticalArrangement = Arrangement.Top
     ) {
 
-        // Header
-        Text(
-            text = "FlashForge",
-            fontSize = 34.sp,
-            color = NeonText,
-            modifier = Modifier.padding(top = 20.dp, bottom = 12.dp)
-        )
+        // Profile
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "FlashForge",
+                fontSize = 34.sp,
+                color = NeonText,
+            )
+
+            // Profile Icon Button
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clickable { navController.navigate(Routes.Profile) }
+                    .background(
+                        Brush.linearGradient(listOf(NeonPurple, NeonPink)),
+                        CircleShape
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                    Text(
+                        text = currentUser?.name?.firstOrNull()?.toString() ?: "U",
+                        color = Color.White,
+                        fontSize = 20.sp
+                    )
+            }
+        }
 
         Text(
-            text = "Welcome back 👋 ${user?.name ?: ""}",
+            text = "Welcome back 👋 ${currentUser?.name ?: "User"}",
             fontSize = 18.sp,
             color = Color.White.copy(alpha = 0.7f)
         )
@@ -60,9 +83,9 @@ fun HomeScreen(
             Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            HomeStatBox("XP", user?.xp ?: 0)
-            HomeStatBox("Streak", user?.streak ?: 0)
-            HomeStatBox("Cards", flashcards.size)
+            HomeStatBox("XP", currentUser?.xp ?: 0)
+            HomeStatBox("Streak", currentUser?.streak ?: 0)
+            HomeStatBox("Cards", userFlashcards.size)
         }
 
         Spacer(Modifier.height(28.dp))
@@ -140,7 +163,6 @@ fun HomeStatBox(title: String, value: Int) {
 
 @Composable
 fun HomeActionCard(title: String, onClick: () -> Unit) {
-
     Box(
         modifier = Modifier
             .width(160.dp)
@@ -163,4 +185,3 @@ fun HomeActionCard(title: String, onClick: () -> Unit) {
         )
     }
 }
-

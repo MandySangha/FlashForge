@@ -6,9 +6,11 @@
  */
 package week11.st8907.finalproject.data.models
 
+import com.google.firebase.firestore.DocumentId
 import java.util.Date
 
 data class Flashcard(
+    @DocumentId
     val cardId: String = "",
     val question: String = "",
     val answer: String = "",

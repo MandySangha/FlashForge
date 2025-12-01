@@ -32,6 +32,6 @@ fun PrimaryButton(text: String, modifier: Modifier = Modifier, onClick: () -> Un
             .clickable { onClick() },
         contentAlignment = Alignment.Center
     ) {
-        Text(text = text, fontSize = 18.sp, color = NeonText)
+        Text(text = text, fontSize = 18.sp, color = Color.White)
     }
 }

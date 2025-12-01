@@ -1,4 +1,4 @@
-package week11.st8907.finalproject.viewmodel
+package week11.st8907.finalproject.data.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope

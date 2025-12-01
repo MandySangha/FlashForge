@@ -33,11 +33,18 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+
     kotlinOptions {
         jvmTarget = "17"
     }
+
     buildFeatures {
         compose = true
+    }
+
+    // Required for CameraX
+    packaging {
+        resources.excludes.add("META-INF/*")
     }
 }
 
@@ -54,8 +61,8 @@ dependencies {
     implementation(libs.androidx.navigation.runtime.ktx)
     implementation(libs.androidx.compose.foundation)
 
-
     implementation("com.google.android.gms:play-services-auth:20.7.0")
+    implementation(libs.androidx.compose.ui.text)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
@@ -65,16 +72,24 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 
+    // CameraX
+    val camerax_version = "1.3.2"
+    implementation("androidx.camera:camera-core:$camerax_version")
+    implementation("androidx.camera:camera-camera2:$camerax_version")
+    implementation("androidx.camera:camera-lifecycle:$camerax_version")
+    implementation("androidx.camera:camera-view:$camerax_version")
+
+    // Navigation
     implementation("androidx.navigation:navigation-compose:2.7.0")
 
-    // ✅ Use the stable Firebase BOM
+    // Firebase BOM
     implementation(platform("com.google.firebase:firebase-bom:32.7.2"))
 
-    // Firebase modules — NO version numbers!
+    // Firebase modules
     implementation("com.google.firebase:firebase-auth-ktx")
     implementation("com.google.firebase:firebase-firestore-ktx")
     implementation("com.google.firebase:firebase-analytics-ktx")
 
-    // Coroutines (needed for await())
+    // Coroutines for await()
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
 }

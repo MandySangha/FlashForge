@@ -1,106 +1,89 @@
-/**
- * ProfileViewModel.kt
- * -------------------------
- * ViewModel for user profile management.
- * Handles user data, progress tracking, and profile operations.
- */
 package week11.st8907.finalproject.data.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.UserProfileChangeRequest
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import week11.st8907.finalproject.data.models.User
-import week11.st8907.finalproject.data.repositories.UserRepository
+import kotlinx.coroutines.tasks.await
+import week11.st8907.finalproject.models.User
+import week11.st8907.finalproject.repositories.UserRepository
 
-class ProfileViewModel : ViewModel() {
-    private val userRepository = UserRepository()
+class ProfileViewModel(
+    private val userRepository: UserRepository = UserRepository()
+) : ViewModel() {
+
+    private val auth = FirebaseAuth.getInstance()
 
     private val _currentUser = MutableStateFlow<User?>(null)
-    val currentUser: StateFlow<User?> = _currentUser.asStateFlow()
+    val currentUser: StateFlow<User?> = _currentUser
 
     private val _isLoading = MutableStateFlow(false)
-    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+    val isLoading: StateFlow<Boolean> = _isLoading
 
     private val _errorMessage = MutableStateFlow<String?>(null)
-    val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
+    val errorMessage: StateFlow<String?> = _errorMessage
 
-    // Load user profile
-    fun loadUserProfile(userId: String) {
+    // Load user profile from Firestore
+    fun loadUserProfile() {
         viewModelScope.launch {
             _isLoading.value = true
             _errorMessage.value = null
-
-            val result = userRepository.getUser(userId)
-            if (result.isSuccess) {
-                _currentUser.value = result.getOrThrow()
-            } else {
-                _errorMessage.value = "Failed to load user profile: ${result.exceptionOrNull()?.message}"
+            try {
+                val user = userRepository.getUser()
+                _currentUser.value = user
+            } catch (e: Exception) {
+                _errorMessage.value = "Failed to load user: ${e.message}"
+            } finally {
+                _isLoading.value = false
             }
-            _isLoading.value = false
         }
     }
 
     // Update user profile
-    fun updateUserProfile(user: User, onSuccess: () -> Unit = {}) {
-        viewModelScope.launch {
-            _isLoading.value = true
-            _errorMessage.value = null
-
-            val result = userRepository.createOrUpdateUser(user)
-            if (result.isSuccess) {
-                _currentUser.value = user
-                onSuccess()
-            } else {
-                _errorMessage.value = "Failed to update profile: ${result.exceptionOrNull()?.message}"
-            }
-            _isLoading.value = false
+    fun updateUserProfile(name: String, email: String, onSuccess: () -> Unit = {}) {
+        val currentUserAuth = auth.currentUser
+        if (currentUserAuth == null) {
+            _errorMessage.value = "User not authenticated"
+            return
         }
-    }
 
-    // Update user progress
-    fun updateUserProgress(userId: String, xpEarned: Int, onSuccess: () -> Unit = {}) {
         viewModelScope.launch {
             _isLoading.value = true
             _errorMessage.value = null
 
-            val result = userRepository.updateUserProgress(userId, xpEarned)
-            if (result.isSuccess) {
-                loadUserProfile(userId)
-                onSuccess()
-            } else {
-                _errorMessage.value = "Failed to update progress: ${result.exceptionOrNull()?.message}"
-            }
-            _isLoading.value = false
-        }
-    }
+            try {
+                // Update Firebase Auth display name
+                val profileUpdates = UserProfileChangeRequest.Builder()
+                    .setDisplayName(name)
+                    .build()
+                currentUserAuth.updateProfile(profileUpdates).await()
 
-    // Update user name
-    fun updateUserName(userId: String, newName: String, onSuccess: () -> Unit = {}) {
-        viewModelScope.launch {
-            _isLoading.value = true
-            _errorMessage.value = null
-
-            val currentUser = _currentUser.value
-            if (currentUser != null) {
-                val updatedUser = currentUser.copy(name = newName)
-                val result = userRepository.createOrUpdateUser(updatedUser)
-                if (result.isSuccess) {
-                    _currentUser.value = updatedUser
-                    onSuccess()
-                } else {
-                    _errorMessage.value = "Failed to update name: ${result.exceptionOrNull()?.message}"
+                // Update email if changed
+                if (email != currentUserAuth.email) {
+                    currentUserAuth.updateEmail(email).await()
                 }
-            } else {
-                _errorMessage.value = "User not loaded"
-            }
-            _isLoading.value = false
-        }
-    }
 
-    fun clearError() {
-        _errorMessage.value = null
+                // Update Firestore
+                val updatedUser = _currentUser.value?.copy(
+                    name = name,
+                    email = email
+                ) ?: User(
+                    userId = currentUserAuth.uid,
+                    name = name,
+                    email = email
+                )
+
+                userRepository.updateUser(updatedUser)
+                _currentUser.value = updatedUser
+                onSuccess()
+            } catch (e: Exception) {
+                _errorMessage.value = "Failed to update profile: ${e.message}"
+            } finally {
+                _isLoading.value = false
+            }
+        }
     }
 }

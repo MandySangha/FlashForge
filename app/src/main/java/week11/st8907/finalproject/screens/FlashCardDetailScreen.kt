@@ -22,17 +22,28 @@ import week11.st8907.finalproject.navigation.Routes
 import week11.st8907.finalproject.ui.theme.NeonPink
 import week11.st8907.finalproject.ui.theme.NeonPurple
 import week11.st8907.finalproject.ui.theme.NeonText
-import week11.st8907.finalproject.viewmodels.FlashcardViewModel
+import week11.st8907.finalproject.data.viewmodels.FlashcardViewModel
+import androidx.compose.runtime.collectAsState
+import com.google.firebase.auth.FirebaseAuth
 
 @Composable
 fun FlashCardDetailScreen(
     navController: NavController,
     cardId: String,
     viewModel: FlashcardViewModel = viewModel()
-
 ) {
-    val cards by viewModel.cards.collectAsState()
-    val card = cards.find { it.cardId == cardId }
+    val currentUser = FirebaseAuth.getInstance().currentUser
+    val userId = currentUser?.uid ?: ""
+
+    // Load user flashcards when screen appears
+    LaunchedEffect(userId) {
+        if (userId.isNotBlank()) {
+            viewModel.loadUserFlashcards(userId)
+        }
+    }
+
+    val userFlashcards by viewModel.userFlashcards.collectAsState()
+    val card = userFlashcards.find { it.cardId == cardId }
 
     var showDeleteDialog by remember { mutableStateOf(false) }
 
@@ -50,7 +61,7 @@ fun FlashCardDetailScreen(
             .padding(22.dp)
     ) {
 
-        // ---------- TOP BAR ----------
+        // Top bar
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth()
@@ -68,7 +79,7 @@ fun FlashCardDetailScreen(
 
         Spacer(Modifier.height(26.dp))
 
-        // ---------- FLASHCARD CONTAINER ----------
+        // Flashcard container
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -91,7 +102,7 @@ fun FlashCardDetailScreen(
 
         Spacer(Modifier.height(40.dp))
 
-        // ---------- EDIT BUTTON ----------
+        // Edit Button
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -111,7 +122,7 @@ fun FlashCardDetailScreen(
 
         Spacer(Modifier.height(18.dp))
 
-        // ---------- DELETE BUTTON ----------
+        // Delete Button
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -124,7 +135,7 @@ fun FlashCardDetailScreen(
         }
     }
 
-    // ---------- DELETE CONFIRMATION DIALOG ----------
+    // Delete Dialog
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
@@ -133,10 +144,11 @@ fun FlashCardDetailScreen(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        viewModel.deleteCard(card.cardId)
-                        showDeleteDialog = false
-                        navController.navigate(Routes.FlashCardList) {
-                            popUpTo(Routes.FlashCardList) { inclusive = true }
+                        viewModel.deleteFlashcard(card.cardId, userId) {
+                            showDeleteDialog = false
+                            navController.navigate(Routes.FlashCardList) {
+                                popUpTo(Routes.FlashCardList) { inclusive = true }
+                            }
                         }
                     }
                 ) { Text("Delete", color = Color.Red) }

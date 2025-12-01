@@ -1,9 +1,3 @@
-/**
- * FlashcardViewModel.kt
- * -------------------------
- * ViewModel for flashcard management.
- * Simple implementation without Hilt dependency injection.
- */
 package week11.st8907.finalproject.data.viewmodels
 
 import androidx.lifecycle.ViewModel
@@ -55,10 +49,32 @@ class FlashcardViewModel : ViewModel() {
     // READ - Load all user flashcards
     fun loadUserFlashcards(userId: String) {
         viewModelScope.launch {
+            println("DEBUG VM: Starting loadUserFlashcards for userId: $userId")
             _isLoading.value = true
-            flashcardRepository.getUserFlashcards(userId).collect { flashcards ->
-                _userFlashcards.value = flashcards
+            _errorMessage.value = null
+
+            try {
+                flashcardRepository.getUserFlashcards(userId).collect { flashcards ->
+                    println("DEBUG VM: Received ${flashcards.size} flashcards from repository")
+
+                    // Debug each flashcard
+                    flashcards.forEachIndexed { index, flashcard ->
+                        println("DEBUG VM: Flashcard $index - ID: '${flashcard.cardId}'")
+                        println("DEBUG VM: Flashcard $index - Question: '${flashcard.question}'")
+                        println("DEBUG VM: Flashcard $index - UserId: '${flashcard.userId}'")
+                    }
+
+                    // Update state
+                    _userFlashcards.value = flashcards
+                    println("DEBUG VM: Updated _userFlashcards with ${flashcards.size} items")
+                }
+            } catch (e: Exception) {
+                println("DEBUG VM: ERROR in loadUserFlashcards: ${e.message}")
+                e.printStackTrace()
+                _errorMessage.value = "Failed to load flashcards: ${e.message}"
+            } finally {
                 _isLoading.value = false
+                println("DEBUG VM: Finished loadUserFlashcards")
             }
         }
     }
@@ -133,5 +149,9 @@ class FlashcardViewModel : ViewModel() {
 
     fun clearError() {
         _errorMessage.value = null
+    }
+
+    fun resetLoading() {
+        _isLoading.value = false
     }
 }

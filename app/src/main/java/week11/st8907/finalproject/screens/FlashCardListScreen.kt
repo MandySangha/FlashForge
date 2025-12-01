@@ -17,21 +17,39 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import week11.st8907.finalproject.navigation.Routes
 import week11.st8907.finalproject.ui.theme.NeonPink
 import week11.st8907.finalproject.ui.theme.NeonPurple
 import week11.st8907.finalproject.ui.theme.NeonText
-import week11.st8907.finalproject.viewmodels.FlashcardViewModel
+import week11.st8907.finalproject.data.viewmodels.FlashcardViewModel
+import androidx.compose.runtime.collectAsState
+import com.google.firebase.auth.FirebaseAuth
 
 @Composable
 fun FlashCardListScreen(
     navController: NavController,
-    viewModel: FlashcardViewModel
-
+    viewModel: FlashcardViewModel = viewModel()
 ) {
+    println("DEBUG SCREEN: FlashCardListScreen composable called")
+    println("DEBUG SCREEN: ViewModel instance: $viewModel")
 
-    val flashcards by viewModel.cards.collectAsState()
+    val currentUser = FirebaseAuth.getInstance().currentUser
+    val userId = currentUser?.uid ?: ""
+
+    println("DEBUG SCREEN: Current userId: '$userId'")
+    println("DEBUG SCREEN: User authenticated: ${currentUser != null}")
+
+
+    // Load user flashcards when screen appears
+    LaunchedEffect(userId) {
+        if (userId.isNotBlank()) {
+            viewModel.loadUserFlashcards(userId)
+        }
+    }
+
+    val flashcards by viewModel.userFlashcards.collectAsState()
 
     Column(
         modifier = Modifier

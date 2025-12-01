@@ -21,14 +21,14 @@ import androidx.navigation.NavController
 import week11.st8907.finalproject.ui.theme.NeonPink
 import week11.st8907.finalproject.ui.theme.NeonPurple
 import week11.st8907.finalproject.ui.theme.NeonText
-import week11.st8907.finalproject.viewmodels.FlashcardViewModel
+import week11.st8907.finalproject.data.viewmodels.FlashcardViewModel
 
 @Composable
 fun StudyModeScreen(
     navController: NavController,
     viewModel: FlashcardViewModel
 ) {
-    val cards by viewModel.cards.collectAsState()
+    val cards by viewModel.userFlashcards.collectAsState()
 
     if (cards.isEmpty()) {
         Box(

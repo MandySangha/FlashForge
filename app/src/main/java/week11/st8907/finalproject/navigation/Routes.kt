@@ -30,6 +30,7 @@ object Routes {
     const val Settings = "settings"
     const val Profile = "profile"
     const val SearchFlashCard = "search_flashcard"
+    const val EditProfile = "edit_profile/{userId}"
 
     // ------------------------
     // Route Builders With Args
@@ -38,4 +39,5 @@ object Routes {
     fun flashcardDetail(cardId: String) = "$FlashCardDetail/$cardId"
     fun editFlashcard(cardId: String) = "$EditFlashCard/$cardId"
     fun studyMode(cardId: String) = "$StudyMode/$cardId"
+    fun editProfile(userId: String) = "edit_profile/$userId"
 }
