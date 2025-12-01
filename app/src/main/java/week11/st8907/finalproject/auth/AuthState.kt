@@ -7,11 +7,15 @@ package week11.st8907.finalproject.auth
  * This state is observed by Compose using StateFlow.
  */
 
-data class AuthState(
-    val email: String = "",
-    val password: String = "",
-    val confirmPassword: String = "",
-    val isLoading: Boolean = false,
-    val errorMessage: String? = null,
-    val success: Boolean = false
-)
+
+
+sealed class AuthState {
+    data object Loading : AuthState()
+
+    data class Success(val message: String) : AuthState()
+
+    data class Error(val message: String) : AuthState()
+
+    data object Idle : AuthState()
+}
+

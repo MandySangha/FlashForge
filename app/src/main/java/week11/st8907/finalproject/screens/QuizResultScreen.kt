@@ -1,54 +1,126 @@
 package week11.st8907.finalproject.screens
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Text
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import week11.st8907.finalproject.navigation.Routes
-
-/**
- * QuizResultScreen.kt
- * -------------------------------------------------------------
- * This placeholder screen will later show quiz performance such as
- * score, accuracy, and retry options. For Step 4, only minimal UI
- * is included along with navigation buttons.
- */
+import week11.st8907.finalproject.ui.theme.*
 
 @Composable
-fun QuizResultScreen(navController: NavController) {
+fun QuizResultScreen(
+    navController: NavController,
+    score: Int,
+    total: Int
+) {
+    var pop by remember { mutableStateOf(false) }
+    val animatedScale by animateFloatAsState(if (pop) 1.05f else 1f)
+
+    LaunchedEffect(Unit) { pop = true }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+            .padding(22.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
 
         Text(
-            text = "Quiz Result Screen",
+            "Your Quiz Results",
             fontSize = 28.sp,
-            modifier = Modifier.padding(bottom = 40.dp)
+            color = NeonText,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(bottom = 16.dp)
         )
 
-        Button(
-            onClick = { navController.navigate(Routes.QuizMode) },
-            modifier = Modifier.fillMaxWidth()
+        // SCORE CARD
+        Box(
+            modifier = Modifier
+                .scale(animatedScale)
+                .fillMaxWidth()
+                .height(200.dp)
+                .background(
+                    Brush.verticalGradient(listOf(NeonPurple, NeonPink)),
+                    RoundedCornerShape(20.dp)
+                )
+                .padding(20.dp),
+            contentAlignment = Alignment.Center
         ) {
-            Text("Retry Quiz")
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    "$score / $total",
+                    color = Color.White,
+                    fontSize = 50.sp,
+                    fontWeight = FontWeight.ExtraBold
+                )
+
+                Text(
+                    when {
+                        score == total -> "Perfect Score! 🔥"
+                        score >= total * 0.7 -> "Great job! Keep going!"
+                        else -> "Keep practicing, you got this!"
+                    },
+                    color = Color.White,
+                    fontSize = 18.sp
+                )
+            }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(Modifier.height(35.dp))
 
-        Button(
-            onClick = { navController.navigate(Routes.Home) },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Back to Home")
-        }
+        NeonButton(
+            text = "Study Again",
+            onClick = { navController.navigate(Routes.StudyMode) }
+        )
+
+        Spacer(Modifier.height(16.dp))
+
+        NeonButton(
+            text = "Back to Home",
+            onClick = {
+                navController.navigate(Routes.Home) {
+                    popUpTo(Routes.Home) { inclusive = true }
+                }
+            }
+        )
     }
 }
+
+@Composable
+fun NeonButton(text: String, onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(55.dp)
+            .background(
+                Brush.horizontalGradient(listOf(NeonPurple, NeonPink)),
+                RoundedCornerShape(16.dp)
+            )
+            .clickableNoRipple { onClick() },
+        contentAlignment = Alignment.Center
+    ) {
+        Text(text, color = Color.White, fontSize = 18.sp)
+    }
+}
+
+@Composable
+fun Modifier.clickableNoRipple(onClick: () -> Unit): Modifier =
+    this.then(
+        Modifier.clickable(
+            indication = null,
+            interactionSource = remember { MutableInteractionSource() }
+        ) { onClick() }
+    )
