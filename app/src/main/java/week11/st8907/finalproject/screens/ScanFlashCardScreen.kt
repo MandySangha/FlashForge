@@ -1,9 +1,12 @@
 package week11.st8907.finalproject.screens
 
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -15,40 +18,81 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.navigation.NavController
 import week11.st8907.finalproject.components.CameraPreview
 import week11.st8907.finalproject.navigation.Routes
 import week11.st8907.finalproject.ui.theme.NeonPink
 import week11.st8907.finalproject.ui.theme.NeonPurple
 import week11.st8907.finalproject.ui.theme.NeonText
+import week11.st8907.finalproject.viewmodel.OCRViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ScanFlashCardScreen(navController: NavController) {
-    var capturedBitmap by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
+fun ScanFlashCardScreen(
+    navController: NavController,
+    ocrViewModel: OCRViewModel
+) {
+
+    val context = LocalContext.current
+    val viewModel = ocrViewModel
+
+    var hasCameraPermission by remember {
+        mutableStateOf(
+            ContextCompat.checkSelfPermission(
+                context, Manifest.permission.CAMERA
+            ) == PackageManager.PERMISSION_GRANTED
+        )
+    }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        hasCameraPermission = granted
+    }
+
+
+    val storagePermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) {}
+
+
+    val readImagesLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) {}
+
+    // GALLERY PICKER
+    val pickImageLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri ->
+        uri?.let {
+            viewModel.processImageFromUri(it, context)
+            navController.navigate(Routes.CreateFlashCard)
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        if (!hasCameraPermission) {
+            permissionLauncher.launch(Manifest.permission.CAMERA)
+        }
+
+        if (android.os.Build.VERSION.SDK_INT >= 33) {
+            readImagesLauncher.launch(Manifest.permission.READ_MEDIA_IMAGES)
+        } else {
+            storagePermissionLauncher.launch(Manifest.permission.READ_EXTERNAL_STORAGE)
+        }
+    }
 
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = {
-                    Text(
-                        "Scan Flashcard",
-                        color = NeonText,
-                        fontWeight = FontWeight.Bold
-                    )
-                },
+                title = { Text("Scan Flashcard", color = NeonText) },
                 navigationIcon = {
-                    IconButton(
-                        onClick = { navController.popBackStack() }
-                    ) {
-                        Icon(
-                            Icons.Default.ArrowBack,
-                            contentDescription = "Back",
-                            tint = NeonText
-                        )
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = null, tint = NeonText)
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
@@ -57,6 +101,7 @@ fun ScanFlashCardScreen(navController: NavController) {
             )
         }
     ) { paddingValues ->
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -64,7 +109,16 @@ fun ScanFlashCardScreen(navController: NavController) {
                 .padding(22.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Camera Preview Upgrade
+
+            if (!hasCameraPermission) {
+                Text("Camera permission is required.", color = Color.White)
+                Button(onClick = {
+                    permissionLauncher.launch(Manifest.permission.CAMERA)
+                }) { Text("Grant Permission") }
+                return@Column
+            }
+
+            // CAMERA PREVIEW
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -75,8 +129,7 @@ fun ScanFlashCardScreen(navController: NavController) {
                 CameraPreview(
                     modifier = Modifier.fillMaxSize(),
                     onPhotoCaptured = { bitmap ->
-                        capturedBitmap = bitmap
-                        // TODO: send to OCR
+                        viewModel.processImageFromBitmap(bitmap)
                         navController.navigate(Routes.CreateFlashCard)
                     }
                 )
@@ -93,10 +146,7 @@ fun ScanFlashCardScreen(navController: NavController) {
                         Brush.horizontalGradient(listOf(NeonPurple, NeonPink)),
                         RoundedCornerShape(14.dp)
                     )
-                    .padding(16.dp)
-                    .clickable {
-                        // Trigger capture by tapping preview
-                    },
+                    .padding(16.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Text("Tap Preview to Scan", color = Color.White, fontSize = 18.sp)
@@ -104,10 +154,20 @@ fun ScanFlashCardScreen(navController: NavController) {
 
             Spacer(Modifier.height(20.dp))
 
+            // GALLERY PICK
+            Button(
+                onClick = { pickImageLauncher.launch("image/*") },
+                colors = ButtonDefaults.buttonColors(containerColor = NeonPurple)
+            ) {
+                Text("Pick From Gallery", color = Color.White)
+            }
+
+            Spacer(Modifier.height(12.dp))
+
             TextButton(onClick = {
                 navController.navigate(Routes.CreateFlashCard)
             }) {
-                Text("Or Enter Manually", color = NeonPink, fontSize = 16.sp)
+                Text("Or Enter Manually", color = NeonPink)
             }
         }
     }

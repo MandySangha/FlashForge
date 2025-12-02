@@ -13,7 +13,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import week11.st8907.finalproject.components.PrimaryButton
 import week11.st8907.finalproject.data.viewmodels.FlashcardViewModel
-import week11.st8907.finalproject.models.Flashcard
 import week11.st8907.finalproject.ui.theme.NeonPink
 import week11.st8907.finalproject.ui.theme.NeonText
 
@@ -23,29 +22,37 @@ fun EditFlashCardScreen(
     cardId: String,
     viewModel: FlashcardViewModel = viewModel()
 ) {
+    // Load all flashcards from VM
     val allCards by viewModel.userFlashcards.collectAsState()
+
+    // Card to edit
     val card = allCards.find { it.cardId == cardId }
 
+    // UI state
     var question by remember { mutableStateOf("") }
     var answer by remember { mutableStateOf("") }
     var showSavedDialog by remember { mutableStateOf(false) }
 
-    // Load card data into fields
+    // Populate text fields when card becomes available
     LaunchedEffect(card) {
-        card?.let {
-            question = it.question
-            answer = it.answer
+        if (card != null) {
+            question = card.question
+            answer = card.answer
         }
     }
 
+    // If card is null (still loading)
     if (card == null) {
         Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
-        ) { Text("Loading…", color = NeonText) }
+        ) {
+            Text("Loading…", color = NeonText)
+        }
         return
     }
 
+    // UI Content
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -58,7 +65,7 @@ fun EditFlashCardScreen(
             modifier = Modifier.fillMaxWidth()
         ) {
             IconButton(onClick = { navController.popBackStack() }) {
-                Icon(Icons.Default.ArrowBack, contentDescription = null, tint = NeonText)
+                Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = NeonText)
             }
             Spacer(Modifier.width(8.dp))
             Text(
@@ -70,27 +77,31 @@ fun EditFlashCardScreen(
 
         Spacer(Modifier.height(20.dp))
 
-        // Question Field
+        // Question Input
         OutlinedTextField(
             value = question,
             onValueChange = { question = it },
             label = { Text("Question") },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = false,
+            maxLines = 4
         )
 
         Spacer(Modifier.height(20.dp))
 
-        // Answer Field
+        // Answer Input
         OutlinedTextField(
             value = answer,
             onValueChange = { answer = it },
             label = { Text("Answer") },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = false,
+            maxLines = 4
         )
 
         Spacer(Modifier.height(30.dp))
 
-        // Save Button
+        // Save button
         PrimaryButton(
             text = "Save Changes",
             onClick = {
@@ -107,15 +118,18 @@ fun EditFlashCardScreen(
 
         Spacer(Modifier.height(12.dp))
 
-        TextButton(onClick = { navController.popBackStack() }) {
+        // Cancel
+        TextButton(
+            onClick = { navController.popBackStack() }
+        ) {
             Text("Cancel", color = NeonPink)
         }
     }
 
-    // Success Dialog
+    // SUCCESS DIALOG
     if (showSavedDialog) {
         AlertDialog(
-            onDismissRequest = {},
+            onDismissRequest = { },
             title = { Text("Flashcard Updated") },
             text = { Text("Your changes have been saved successfully.") },
             confirmButton = {

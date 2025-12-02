@@ -30,6 +30,7 @@ fun CameraPreview(
     AndroidView(
         modifier = modifier,
         factory = { androidViewContext ->
+
             val previewView = PreviewView(androidViewContext)
 
             val cameraProviderFuture = ProcessCameraProvider.getInstance(androidViewContext)
@@ -44,7 +45,6 @@ fun CameraPreview(
 
                 val imageCapture = ImageCapture.Builder()
                     .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
-                    .setTargetRotation(previewView.display.rotation)
                     .build()
 
                 try {
@@ -57,10 +57,8 @@ fun CameraPreview(
                     )
                 } catch (_: Exception) {}
 
-                // Tap to capture
                 previewView.setOnClickListener {
                     val file = File(androidViewContext.cacheDir, "capture.jpg")
-
                     val outputOptions = ImageCapture.OutputFileOptions.Builder(file).build()
 
                     imageCapture.takePicture(
@@ -73,9 +71,7 @@ fun CameraPreview(
 
                             override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
                                 val bitmap = BitmapFactory.decodeFile(file.absolutePath)
-                                if (bitmap != null) {
-                                    onPhotoCaptured(bitmap)
-                                }
+                                if (bitmap != null) onPhotoCaptured(bitmap)
                             }
                         }
                     )

@@ -21,11 +21,11 @@ data class StudySession(
     val correctAnswers: Int = 0,
     val incorrectAnswers: Int = 0,
     val skippedCards: Int = 0,
-    val date: Date = Date(), // Session timestamp
-    val duration: Int = 0, // Session duration in seconds
+    val date: Date = Date(),
+    val duration: Int = 0,
     val xpEarned: Int = 0,
     val cardsStudied: List<String> = emptyList(),
-    val difficultyBreakdown: Map<String, Int> = emptyMap() // easy: 5, medium: 3, hard: 2
+    val difficultyBreakdown: Map<String, Int> = emptyMap()
 ) {
 
     // Calculates the session accuracy percentage
@@ -70,16 +70,16 @@ data class StudySession(
             )
         }
 
-        // Calculates XP based on session performance
+
         fun calculateXp(
             correctAnswers: Int,
             sessionDuration: Int,
             difficultyMultiplier: Float = 1.0f
         ): Int {
-            // Base XP: 10 per correct answer
+
             val baseXp = correctAnswers * 10
 
-            // Time bonus: up to 50 XP for efficient studying
+
             val timeBonus = if (sessionDuration < 300) 50 else 75 - (sessionDuration / 10)
 
             // Apply difficulty multiplier

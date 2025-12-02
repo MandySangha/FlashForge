@@ -22,14 +22,15 @@ import week11.st8907.finalproject.ui.theme.NeonPurple
 import week11.st8907.finalproject.ui.theme.NeonText
 import week11.st8907.finalproject.data.viewmodels.FlashcardViewModel
 import week11.st8907.finalproject.data.viewmodels.ProfileViewModel
+import week11.st8907.finalproject.data.viewmodels.UserViewModel
 
 @Composable
 fun HomeScreen(
     navController: NavController,
-    profileVM: ProfileViewModel = viewModel(),
+    profileVM: UserViewModel = viewModel(),
     cardVM: FlashcardViewModel = viewModel()
 ) {
-    val currentUser by profileVM.currentUser.collectAsState()
+    val currentUser by profileVM.user.collectAsState()
     val userFlashcards by cardVM.userFlashcards.collectAsState()
 
     Column(

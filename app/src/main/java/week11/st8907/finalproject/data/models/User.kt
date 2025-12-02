@@ -1,13 +1,4 @@
-/**
- * User.kt
- * -------------------------
- * Data model for user profiles.
- * Contains user information, progress tracking, and study statistics.
- */
-
 package week11.st8907.finalproject.data.models
-
-import java.util.Date
 
 data class User(
     val userId: String = "",
@@ -15,8 +6,11 @@ data class User(
     val name: String = "",
     val xp: Int = 0,
     val streak: Int = 0,
-    val lastStudyDate: Date? = null,
-    val createdAt: Date = Date(),
+
+    // Use Long for Firestore compatibility (prevents Date conversion crash)
+    val lastStudyDate: Long? = null,
+    val createdAt: Long = System.currentTimeMillis(),
+
     val totalCardsCreated: Int = 0,
     val totalStudySessions: Int = 0
 )
