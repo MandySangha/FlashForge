@@ -9,12 +9,14 @@ import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import week11.st8907.finalproject.screens.*
 import week11.st8907.finalproject.data.viewmodels.FlashcardViewModel
+import week11.st8907.finalproject.viewmodel.OCRViewModel
 
 @Composable
 fun AppNavGraph(navController: NavHostController) {
 
-    // One shared ViewModel for ALL flashcard screens
+    // Shared ViewModels
     val flashcardViewModel: FlashcardViewModel = viewModel()
+    val ocrViewModel: OCRViewModel = viewModel()
 
     NavHost(
         navController = navController,
@@ -32,11 +34,18 @@ fun AppNavGraph(navController: NavHostController) {
 
         // Create & Scan
         composable(Routes.CreateFlashCard) {
-            CreateFlashCardScreen(navController, flashcardViewModel)
+            CreateFlashCardScreen(
+                navController = navController,
+                flashcardViewModel = flashcardViewModel,
+                ocrViewModel = ocrViewModel
+            )
         }
 
         composable(Routes.ScanFlashCard) {
-            ScanFlashCardScreen(navController)
+            ScanFlashCardScreen(
+                navController = navController,
+                ocrViewModel = ocrViewModel
+            )
         }
 
         // List
@@ -53,10 +62,9 @@ fun AppNavGraph(navController: NavHostController) {
             FlashCardDetailScreen(navController, cardId, flashcardViewModel)
         }
 
-        // EDIT
-
-        composable("edit_profile") {
-            EditProfileScreen(navController = navController)
+        // EDIT PROFILE
+        composable(Routes.EditProfile) {
+            EditProfileScreen(navController)
         }
 
         // STUDY MODE
@@ -64,8 +72,7 @@ fun AppNavGraph(navController: NavHostController) {
             StudyModeScreen(navController, flashcardViewModel)
         }
 
-
-        // Quiz
+        // QUIZ
         composable(
             route = "${Routes.QuizResult}/{score}/{total}"
         ) { entry ->
@@ -77,18 +84,6 @@ fun AppNavGraph(navController: NavHostController) {
         composable(Routes.QuizMode) {
             QuizModeScreen(navController, flashcardViewModel)
         }
-
-        composable("${Routes.QuizResult}/{score}/{total}") { entry ->
-            val score = entry.arguments?.getString("score")?.toIntOrNull() ?: 0
-            val total = entry.arguments?.getString("total")?.toIntOrNull() ?: 0
-            QuizResultScreen(navController, score, total)
-        }
-
-        // Other
-        composable(Routes.Stats) { StatsScreen(navController) }
-        composable(Routes.Settings) { SettingsScreen(navController) }
-        composable(Routes.Profile) { ProfileScreen(navController) }
-        composable(route = Routes.EditProfile) { EditProfileScreen(navController = navController) }
 
         // Search
         composable(Routes.SearchFlashCard) {

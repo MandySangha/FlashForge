@@ -64,6 +64,8 @@ dependencies {
     implementation("com.google.android.gms:play-services-auth:20.7.0")
     implementation(libs.androidx.compose.ui.text)
 
+    implementation("com.google.mlkit:text-recognition:16.0.0")
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

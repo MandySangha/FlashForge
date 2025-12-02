@@ -8,8 +8,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
-import week11.st8907.finalproject.models.User
-import week11.st8907.finalproject.repositories.UserRepository
+import week11.st8907.finalproject.data.models.User
+import week11.st8907.finalproject.data.repositories.UserRepository
 
 class ProfileViewModel(
     private val userRepository: UserRepository = UserRepository()
@@ -26,29 +26,41 @@ class ProfileViewModel(
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage
 
-    // Load user profile from Firestore
+    // ---------------------------------------------------------------------
+    // LOAD USER FROM FIRESTORE
+    // ---------------------------------------------------------------------
     fun loadUserProfile() {
+        val uid = auth.currentUser?.uid ?: return
+
         viewModelScope.launch {
             _isLoading.value = true
             _errorMessage.value = null
-            try {
-                val user = userRepository.getUser()
-                _currentUser.value = user
-            } catch (e: Exception) {
-                _errorMessage.value = "Failed to load user: ${e.message}"
-            } finally {
-                _isLoading.value = false
+
+            val result = userRepository.getUser(uid)
+
+            if (result.isSuccess) {
+                _currentUser.value = result.getOrThrow()
+            } else {
+                _errorMessage.value = result.exceptionOrNull()?.message
             }
+
+            _isLoading.value = false
         }
     }
 
-    // Update user profile
-    fun updateUserProfile(name: String, email: String, onSuccess: () -> Unit = {}) {
-        val currentUserAuth = auth.currentUser
-        if (currentUserAuth == null) {
-            _errorMessage.value = "User not authenticated"
-            return
-        }
+    // ---------------------------------------------------------------------
+    // UPDATE USER PROFILE (Auth + Firestore)
+    // ---------------------------------------------------------------------
+    fun updateUserProfile(
+        name: String,
+        email: String,
+        onSuccess: () -> Unit = {}
+    ) {
+        val userAuth = auth.currentUser
+            ?: run {
+                _errorMessage.value = "User not authenticated"
+                return
+            }
 
         viewModelScope.launch {
             _isLoading.value = true
@@ -59,31 +71,39 @@ class ProfileViewModel(
                 val profileUpdates = UserProfileChangeRequest.Builder()
                     .setDisplayName(name)
                     .build()
-                currentUserAuth.updateProfile(profileUpdates).await()
 
-                // Update email if changed
-                if (email != currentUserAuth.email) {
-                    currentUserAuth.updateEmail(email).await()
+                userAuth.updateProfile(profileUpdates).await()
+
+                // Update Firebase Auth email
+                if (email != userAuth.email) {
+                    userAuth.updateEmail(email).await()
                 }
 
-                // Update Firestore
+                // Build updated user model
                 val updatedUser = _currentUser.value?.copy(
                     name = name,
                     email = email
                 ) ?: User(
-                    userId = currentUserAuth.uid,
+                    userId = userAuth.uid,
                     name = name,
                     email = email
                 )
 
-                userRepository.updateUser(updatedUser)
-                _currentUser.value = updatedUser
-                onSuccess()
+                // Firestore update
+                val repoResult = userRepository.createOrUpdateUser(updatedUser)
+
+                if (repoResult.isSuccess) {
+                    _currentUser.value = updatedUser
+                    onSuccess()
+                } else {
+                    _errorMessage.value = repoResult.exceptionOrNull()?.message
+                }
+
             } catch (e: Exception) {
                 _errorMessage.value = "Failed to update profile: ${e.message}"
-            } finally {
-                _isLoading.value = false
             }
+
+            _isLoading.value = false
         }
     }
 }
