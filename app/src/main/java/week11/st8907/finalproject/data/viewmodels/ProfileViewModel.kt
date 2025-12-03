@@ -26,8 +26,26 @@ class ProfileViewModel(
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage
 
+    private val _updateSuccess = MutableStateFlow(false)
+    val updateSuccess: StateFlow<Boolean> = _updateSuccess
+
+    init {
+        setupRealtimeUserListener()
+    }
+
     // ---------------------------------------------------------------------
-    // LOAD USER FROM FIRESTORE
+    // REAL-TIME USER LISTENER
+    // ---------------------------------------------------------------------
+    private fun setupRealtimeUserListener() {
+        val uid = auth.currentUser?.uid ?: return
+
+        userRepository.getUserRealtime(uid) { user ->
+            _currentUser.value = user
+        }
+    }
+
+    // ---------------------------------------------------------------------
+    // LOAD USER FROM FIRESTORE (One-time load)
     // ---------------------------------------------------------------------
     fun loadUserProfile() {
         val uid = auth.currentUser?.uid ?: return
@@ -49,11 +67,35 @@ class ProfileViewModel(
     }
 
     // ---------------------------------------------------------------------
-    // UPDATE USER PROFILE (Auth + Firestore)
+    // UPDATE USER PROGRESS (Study sessions)
+    // ---------------------------------------------------------------------
+    fun updateUserProgress(xpEarned: Int, onSuccess: () -> Unit = {}) {
+        val userId = auth.currentUser?.uid ?: return
+
+        viewModelScope.launch {
+            _isLoading.value = true
+            _errorMessage.value = null
+
+            try {
+                val result = userRepository.updateUserProgress(userId, xpEarned)
+                if (result.isSuccess) {
+                    onSuccess()
+                } else {
+                    _errorMessage.value = result.exceptionOrNull()?.message
+                }
+            } catch (e: Exception) {
+                _errorMessage.value = "Failed to update progress: ${e.message}"
+            }
+
+            _isLoading.value = false
+        }
+    }
+
+    // ---------------------------------------------------------------------
+    // UPDATE USER PROFILE - FIXED VERSION
     // ---------------------------------------------------------------------
     fun updateUserProfile(
         name: String,
-        email: String,
         onSuccess: () -> Unit = {}
     ) {
         val userAuth = auth.currentUser
@@ -65,45 +107,72 @@ class ProfileViewModel(
         viewModelScope.launch {
             _isLoading.value = true
             _errorMessage.value = null
+            _updateSuccess.value = false
 
             try {
-                // Update Firebase Auth display name
-                val profileUpdates = UserProfileChangeRequest.Builder()
-                    .setDisplayName(name)
-                    .build()
+                val userId = userAuth.uid
 
-                userAuth.updateProfile(profileUpdates).await()
+                // Get current user to preserve other fields
+                val currentResult = userRepository.getUser(userId)
 
-                // Update Firebase Auth email
-                if (email != userAuth.email) {
-                    userAuth.updateEmail(email).await()
+                if (!currentResult.isSuccess) {
+                    _errorMessage.value = "Failed to load user data: ${currentResult.exceptionOrNull()?.message}"
+                    _isLoading.value = false
+                    return@launch
                 }
 
-                // Build updated user model
-                val updatedUser = _currentUser.value?.copy(
-                    name = name,
-                    email = email
-                ) ?: User(
-                    userId = userAuth.uid,
-                    name = name,
-                    email = email
-                )
+                val currentUser = currentResult.getOrThrow()
+                val trimmedName = name.trim()
 
-                // Firestore update
-                val repoResult = userRepository.createOrUpdateUser(updatedUser)
+                if (trimmedName.isNotEmpty() && trimmedName != currentUser.name) {
+                    try {
+                        val profileUpdates = UserProfileChangeRequest.Builder()
+                            .setDisplayName(trimmedName)
+                            .build()
+                        userAuth.updateProfile(profileUpdates).await()
+                        println("Updated Auth display name to: $trimmedName")
+                    } catch (authEx: Exception) {
+                        println("Failed to update Auth profile: ${authEx.message}")
+                    }
+                }
 
-                if (repoResult.isSuccess) {
-                    _currentUser.value = updatedUser
-                    onSuccess()
+                if (trimmedName.isNotEmpty() && trimmedName != currentUser.name) {
+                    val updateResult = userRepository.updateUserName(userId, trimmedName)
+
+                    if (updateResult.isSuccess) {
+                        println("Updated Firestore name to: $trimmedName")
+
+                        // Update local state with the new name
+                        _currentUser.value = currentUser.copy(name = trimmedName)
+                        _updateSuccess.value = true
+                        onSuccess()
+                    } else {
+                        _errorMessage.value = "Failed to update profile: ${updateResult.exceptionOrNull()?.message}"
+                    }
                 } else {
-                    _errorMessage.value = repoResult.exceptionOrNull()?.message
+                    _errorMessage.value = "Name unchanged or empty"
                 }
 
             } catch (e: Exception) {
-                _errorMessage.value = "Failed to update profile: ${e.message}"
+                _errorMessage.value = "Error updating profile: ${e.message}"
+                println("Profile update error: ${e.message}")
             }
 
             _isLoading.value = false
         }
+    }
+
+    // ---------------------------------------------------------------------
+    // CLEAR ERROR MESSAGE
+    // ---------------------------------------------------------------------
+    fun clearErrorMessage() {
+        _errorMessage.value = null
+    }
+
+    // ---------------------------------------------------------------------
+    // RESET UPDATE SUCCESS
+    // ---------------------------------------------------------------------
+    fun resetUpdateSuccess() {
+        _updateSuccess.value = false
     }
 }

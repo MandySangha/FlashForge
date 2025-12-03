@@ -30,7 +30,7 @@ object Routes {
     const val Settings = "settings"
     const val Profile = "profile"
     const val SearchFlashCard = "search_flashcard"
-    const val EditProfile = "edit_profile/{userId}"
+    const val EditProfile = "edit_profile"
 
     // ------------------------
     // Route Builders With Args

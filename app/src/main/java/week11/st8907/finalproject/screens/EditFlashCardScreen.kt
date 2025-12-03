@@ -2,7 +2,7 @@ package week11.st8907.finalproject.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -24,14 +24,21 @@ fun EditFlashCardScreen(
 ) {
     // Load all flashcards from VM
     val allCards by viewModel.userFlashcards.collectAsState()
+    val currentFlashcard by viewModel.currentFlashcard.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
 
     // Card to edit
-    val card = allCards.find { it.cardId == cardId }
+    val card = allCards.find { it.cardId == cardId } ?: currentFlashcard
 
     // UI state
     var question by remember { mutableStateOf("") }
     var answer by remember { mutableStateOf("") }
     var showSavedDialog by remember { mutableStateOf(false) }
+
+    // Load the specific flashcard
+    LaunchedEffect(cardId) {
+        viewModel.loadFlashcard(cardId)
+    }
 
     // Populate text fields when card becomes available
     LaunchedEffect(card) {
@@ -41,13 +48,26 @@ fun EditFlashCardScreen(
         }
     }
 
-    // If card is null (still loading)
+    // Show loading state
+    if (isLoading) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator(color = NeonText)
+            Spacer(Modifier.width(16.dp))
+            Text("Loading…", color = NeonText)
+        }
+        return
+    }
+
+    // If card is null (not found)
     if (card == null) {
         Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
-            Text("Loading…", color = NeonText)
+            Text("Flashcard not found", color = NeonText)
         }
         return
     }
@@ -65,7 +85,7 @@ fun EditFlashCardScreen(
             modifier = Modifier.fillMaxWidth()
         ) {
             IconButton(onClick = { navController.popBackStack() }) {
-                Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = NeonText)
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = NeonText)
             }
             Spacer(Modifier.width(8.dp))
             Text(

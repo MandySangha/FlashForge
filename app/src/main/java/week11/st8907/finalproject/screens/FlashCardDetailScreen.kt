@@ -6,18 +6,18 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import week11.st8907.finalproject.components.PrimaryButton
 import week11.st8907.finalproject.navigation.Routes
 import week11.st8907.finalproject.ui.theme.NeonPink
 import week11.st8907.finalproject.ui.theme.NeonPurple
@@ -67,7 +67,7 @@ fun FlashCardDetailScreen(
             modifier = Modifier.fillMaxWidth()
         ) {
             IconButton(onClick = { navController.popBackStack() }) {
-                Icon(Icons.Default.ArrowBack, contentDescription = null, tint = NeonText)
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = NeonText)
             }
             Spacer(Modifier.width(8.dp))
             Text(
@@ -103,22 +103,13 @@ fun FlashCardDetailScreen(
         Spacer(Modifier.height(40.dp))
 
         // Edit Button
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(55.dp)
-                .background(
-                    Brush.horizontalGradient(listOf(NeonPurple, NeonPink)),
-                    RoundedCornerShape(14.dp)
-                )
-                .shadow(10.dp, RoundedCornerShape(14.dp))
-                .clickable {
-                    navController.navigate("edit_flashcard/${card.cardId}")
-                },
-            contentAlignment = Alignment.Center
-        ) {
-            Text("Edit Flashcard", color = Color.White, fontSize = 17.sp)
-        }
+        PrimaryButton(
+            text = "Edit Flashcard",
+            onClick = {
+                navController.navigate(Routes.editFlashcard(card.cardId))
+            },
+            modifier = Modifier.fillMaxWidth()
+        )
 
         Spacer(Modifier.height(18.dp))
 

@@ -8,14 +8,12 @@
 package week11.st8907.finalproject.data.repositories
 
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.ktx.toObject
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 import week11.st8907.finalproject.data.models.Flashcard
-import java.util.Date
 
 class FlashcardRepository {
     private val firestore = FirebaseFirestore.getInstance()
@@ -26,8 +24,7 @@ class FlashcardRepository {
         return try {
             val documentRef = flashcardsCollection.document()
             val newFlashcard = flashcard.copy(
-                cardId = documentRef.id,
-                createdAt = Date()
+                cardId = documentRef.id
             )
             documentRef.set(newFlashcard).await()
             Result.success(documentRef.id)
@@ -103,14 +100,25 @@ class FlashcardRepository {
     // UPDATE - Update flashcard
     suspend fun updateFlashcard(flashcard: Flashcard): Result<Boolean> {
         return try {
+            val updates = hashMapOf<String, Any>(
+                "question" to flashcard.question,
+                "answer" to flashcard.answer,
+                "category" to flashcard.category,
+                "tags" to flashcard.tags,
+                "difficulty" to flashcard.difficulty,
+                "sourceType" to flashcard.sourceType,
+                "isPublic" to flashcard.isPublic
+            )
+
             flashcardsCollection.document(flashcard.cardId)
-                .set(flashcard.copy(lastReviewed = Date()))
+                .update(updates)
                 .await()
             Result.success(true)
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
+
 
     // DELETE - Delete flashcard
     suspend fun deleteFlashcard(cardId: String): Result<Boolean> {

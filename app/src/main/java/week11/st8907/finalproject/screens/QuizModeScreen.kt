@@ -6,16 +6,19 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.google.firebase.auth.FirebaseAuth
 import week11.st8907.finalproject.navigation.Routes
 import week11.st8907.finalproject.ui.theme.NeonPink
 import week11.st8907.finalproject.ui.theme.NeonPurple
@@ -25,8 +28,18 @@ import week11.st8907.finalproject.data.viewmodels.FlashcardViewModel
 @Composable
 fun QuizModeScreen(
     navController: NavController,
-    viewModel: FlashcardViewModel
+    viewModel: FlashcardViewModel = viewModel()
 ) {
+    val currentUser = FirebaseAuth.getInstance().currentUser
+    val userId = currentUser?.uid ?: ""
+
+    // Load flashcards when screen appears
+    LaunchedEffect(userId) {
+        if (userId.isNotBlank()) {
+            viewModel.loadUserFlashcards(userId)
+        }
+    }
+
     val cards by viewModel.userFlashcards.collectAsState()
 
     if (cards.isEmpty()) {
@@ -40,6 +53,7 @@ fun QuizModeScreen(
     var score by remember { mutableStateOf(0) }
     var selected by remember { mutableStateOf<String?>(null) }
     var showAnswer by remember { mutableStateOf(false) }
+    var isTrackingProgress by remember { mutableStateOf(false) }
 
     val card = cards[index]
 
@@ -61,8 +75,24 @@ fun QuizModeScreen(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth()
         ) {
-            IconButton(onClick = { navController.popBackStack() }) {
-                Icon(Icons.Default.ArrowBack, contentDescription = null, tint = NeonText)
+            IconButton(onClick = {
+                if (index > 0 && userId.isNotBlank()) {
+                    // Track partial progress before leaving
+                    val partialCardsStudied = index + 1
+                    val partialScore = score
+
+                    viewModel.trackStudyProgress(
+                        cardsStudied = partialCardsStudied,
+                        correctAnswers = partialScore,
+                        onSuccess = {
+                            navController.popBackStack()
+                        }
+                    )
+                } else {
+                    navController.popBackStack()
+                }
+            }) {
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = NeonText)
             }
 
             Text(
@@ -76,12 +106,26 @@ fun QuizModeScreen(
         Spacer(Modifier.height(10.dp))
 
         // Progress
-        Text(
-            text = "Question ${index + 1} / ${cards.size}",
-            color = NeonPink,
-            fontSize = 18.sp,
-            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Question ${index + 1} / ${cards.size}",
+                color = NeonPink,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold
+            )
+
+            // Current Score
+            Text(
+                text = "Score: $score",
+                color = Color(0xFFFFD700),
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
 
         Spacer(Modifier.height(20.dp))
 
@@ -111,7 +155,7 @@ fun QuizModeScreen(
                         shape = RoundedCornerShape(14.dp)
                     )
                     .background(Color(0xFF1A1A1D), RoundedCornerShape(14.dp))
-                    .clickable(enabled = !showAnswer) {
+                    .clickable(enabled = !showAnswer && !isTrackingProgress) {
                         selected = choice
                     }
                     .padding(16.dp),
@@ -132,7 +176,10 @@ fun QuizModeScreen(
                     Brush.horizontalGradient(listOf(NeonPurple, NeonPink)),
                     RoundedCornerShape(16.dp)
                 )
-                .clickable {
+                .clickable(
+                    enabled = !isTrackingProgress &&
+                            (showAnswer || selected != null)
+                ) {
                     if (!showAnswer) {
                         showAnswer = true
                         if (selected == card.answer) score++
@@ -143,18 +190,35 @@ fun QuizModeScreen(
                             selected = null
                             showAnswer = false
                         } else {
-                            // Quiz finished → send score
-                            navController.navigate("${Routes.QuizResult}/$score/${cards.size}")
+                            // Quiz finished
+                            isTrackingProgress = true
+
+                            // Track progress
+                            viewModel.trackStudyProgress(
+                                cardsStudied = cards.size,
+                                correctAnswers = score,
+                                onSuccess = {
+                                    navController.navigate("${Routes.QuizResult}/$score/${cards.size}")
+                                }
+                            )
                         }
                     }
                 },
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                if (!showAnswer) "Submit" else if (index < cards.size - 1) "Next" else "Finish",
-                color = Color.White,
-                fontSize = 18.sp
-            )
+            if (isTrackingProgress) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(24.dp),
+                    color = Color.White,
+                    strokeWidth = 2.dp
+                )
+            } else {
+                Text(
+                    if (!showAnswer) "Submit" else if (index < cards.size - 1) "Next" else "Finish Quiz",
+                    color = Color.White,
+                    fontSize = 18.sp
+                )
+            }
         }
     }
 }

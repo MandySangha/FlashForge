@@ -7,8 +7,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
-import week11.st8907.finalproject.screens.*
 import week11.st8907.finalproject.data.viewmodels.FlashcardViewModel
+import week11.st8907.finalproject.screens.*
 import week11.st8907.finalproject.viewmodel.OCRViewModel
 
 @Composable
@@ -32,6 +32,9 @@ fun AppNavGraph(navController: NavHostController) {
         // Home
         composable(Routes.Home) { HomeScreen(navController) }
 
+        // Profile
+        composable(Routes.Profile) { ProfileScreen(navController) }
+
         // Create & Scan
         composable(Routes.CreateFlashCard) {
             CreateFlashCardScreen(
@@ -50,44 +53,62 @@ fun AppNavGraph(navController: NavHostController) {
 
         // List
         composable(Routes.FlashCardList) {
-            FlashCardListScreen(navController, flashcardViewModel)
+            FlashCardListScreen(navController)
         }
 
         // DETAIL
         composable(
-            route = "${Routes.FlashCardDetail}/{cardId}",
+            route = Routes.FlashCardDetail + "/{cardId}",
             arguments = listOf(navArgument("cardId") { type = NavType.StringType })
         ) { entry ->
             val cardId = entry.arguments?.getString("cardId") ?: ""
-            FlashCardDetailScreen(navController, cardId, flashcardViewModel)
+            FlashCardDetailScreen(navController, cardId)
+        }
+
+        // EDIT FLASHCARD
+        composable(
+            route = Routes.EditFlashCard + "/{cardId}",
+            arguments = listOf(navArgument("cardId") { type = NavType.StringType })
+        ) { entry ->
+            val cardId = entry.arguments?.getString("cardId") ?: ""
+            EditFlashCardScreen(navController, cardId, flashcardViewModel)
         }
 
         // EDIT PROFILE
         composable(Routes.EditProfile) {
-            EditProfileScreen(navController)
+            EditProfileScreen(navController = navController)
         }
 
         // STUDY MODE
         composable(Routes.StudyMode) {
-            StudyModeScreen(navController, flashcardViewModel)
+            StudyModeScreen(navController)
         }
 
-        // QUIZ
-        composable(
-            route = "${Routes.QuizResult}/{score}/{total}"
-        ) { entry ->
-            val score = entry.arguments?.getString("score")?.toIntOrNull() ?: 0
-            val total = entry.arguments?.getString("total")?.toIntOrNull() ?: 0
-            QuizResultScreen(navController, score, total)
-        }
-
+        // QUIZ MODE
         composable(Routes.QuizMode) {
-            QuizModeScreen(navController, flashcardViewModel)
+            QuizModeScreen(navController)
+        }
+
+        // QUIZ RESULT
+        composable(
+            route = Routes.QuizResult + "/{score}/{total}",
+            arguments = listOf(
+                navArgument("score") { type = NavType.IntType },
+                navArgument("total") { type = NavType.IntType }
+            )
+        ) { entry ->
+            val score = entry.arguments?.getInt("score") ?: 0
+            val total = entry.arguments?.getInt("total") ?: 0
+            QuizResultScreen(
+                navController = navController,
+                score = score,
+                total = total
+            )
         }
 
         // Search
         composable(Routes.SearchFlashCard) {
-            SearchFlashCardScreen(navController, flashcardViewModel)
+            SearchFlashCardScreen(navController)
         }
     }
 }

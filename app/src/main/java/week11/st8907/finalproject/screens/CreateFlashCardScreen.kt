@@ -1,8 +1,9 @@
 package week11.st8907.finalproject.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -19,24 +20,41 @@ import week11.st8907.finalproject.viewmodel.OCRViewModel
 import week11.st8907.finalproject.ui.theme.NeonPink
 import week11.st8907.finalproject.ui.theme.NeonPurple
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateFlashCardScreen(
     navController: NavController,
     flashcardViewModel: FlashcardViewModel,
     ocrViewModel: OCRViewModel
 ) {
-    // Get scanned text from OCR processor (shared VM)
     val scannedText = ocrViewModel.recognizedText.collectAsState().value
-
     val currentUser = FirebaseAuth.getInstance().currentUser
     val userId = currentUser?.uid ?: ""
 
     var question by remember { mutableStateOf(scannedText) }
     var answer by remember { mutableStateOf("") }
+    var selectedCategory by remember { mutableStateOf("General") }
+    var categoryExpanded by remember { mutableStateOf(false) }
     var showDialog by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    // Keep field updated when scanned text changes
+    val categories = listOf(
+        "General",
+        "Math",
+        "Science",
+        "History",
+        "Geography",
+        "Language",
+        "Programming",
+        "Medicine",
+        "Law",
+        "Business",
+        "Art",
+        "Music",
+        "Sports",
+        "Personal"
+    )
+
     LaunchedEffect(scannedText) {
         if (scannedText.isNotBlank()) {
             question = scannedText
@@ -48,16 +66,16 @@ fun CreateFlashCardScreen(
             .fillMaxSize()
             .padding(22.dp)
     ) {
-
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = { navController.popBackStack() }) {
-                Icon(Icons.Default.ArrowBack, contentDescription = null, tint = Color.White)
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = Color.White)
             }
             Text("Create Flashcard", color = Color.White, fontSize = 26.sp)
         }
 
         Spacer(Modifier.height(20.dp))
 
+        // Question Field
         TextField(
             value = question,
             onValueChange = { question = it },
@@ -75,6 +93,7 @@ fun CreateFlashCardScreen(
 
         Spacer(Modifier.height(20.dp))
 
+        // Answer Field
         TextField(
             value = answer,
             onValueChange = { answer = it },
@@ -90,8 +109,70 @@ fun CreateFlashCardScreen(
             )
         )
 
+        Spacer(Modifier.height(20.dp))
+
+        // Category Dropdown
+        Box(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            ExposedDropdownMenuBox(
+                expanded = categoryExpanded,
+                onExpandedChange = { categoryExpanded = !categoryExpanded }
+            ) {
+                TextField(
+                    value = selectedCategory,
+                    onValueChange = {},
+                    readOnly = true,
+                    trailingIcon = {
+                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = categoryExpanded)
+                    },
+                    modifier = Modifier
+                        .menuAnchor()
+                        .fillMaxWidth(),
+                    label = { Text("Category") },
+                    colors = TextFieldDefaults.colors(
+                        focusedIndicatorColor = NeonPink,
+                        unfocusedIndicatorColor = NeonPurple,
+                        focusedContainerColor = Color.Transparent,
+                        unfocusedContainerColor = Color.Transparent,
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White
+                    )
+                )
+
+                ExposedDropdownMenu(
+                    expanded = categoryExpanded,
+                    onDismissRequest = { categoryExpanded = false }
+                ) {
+                    categories.forEach { category ->
+                        DropdownMenuItem(
+                            text = { Text(category, color = Color.White) },
+                            onClick = {
+                                selectedCategory = category
+                                categoryExpanded = false
+                            },
+                            modifier = Modifier.background(Color(0xFF1A1A1D))
+                        )
+                    }
+                }
+            }
+        }
+
         Spacer(Modifier.height(30.dp))
 
+        // Error Message
+        errorMessage?.let { message ->
+            Text(
+                text = message,
+                color = Color.Red,
+                fontSize = 14.sp,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp)
+            )
+        }
+
+        // Save Button
         PrimaryButton(
             text = "Save",
             onClick = {
@@ -104,10 +185,10 @@ fun CreateFlashCardScreen(
                     flashcard = Flashcard(
                         userId = userId,
                         question = question,
-                        answer = answer
+                        answer = answer,
+                        category = selectedCategory
                     ),
                     onSuccess = {
-                        // Reset OCR text after saving
                         ocrViewModel.clearRecognizedText()
                         showDialog = true
                     }

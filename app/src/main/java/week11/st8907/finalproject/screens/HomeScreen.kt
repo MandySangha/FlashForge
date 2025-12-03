@@ -16,22 +16,37 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.google.firebase.auth.FirebaseAuth
 import week11.st8907.finalproject.navigation.Routes
 import week11.st8907.finalproject.ui.theme.NeonPink
 import week11.st8907.finalproject.ui.theme.NeonPurple
 import week11.st8907.finalproject.ui.theme.NeonText
 import week11.st8907.finalproject.data.viewmodels.FlashcardViewModel
 import week11.st8907.finalproject.data.viewmodels.ProfileViewModel
-import week11.st8907.finalproject.data.viewmodels.UserViewModel
 
 @Composable
-fun HomeScreen(
-    navController: NavController,
-    profileVM: UserViewModel = viewModel(),
-    cardVM: FlashcardViewModel = viewModel()
-) {
-    val currentUser by profileVM.user.collectAsState()
-    val userFlashcards by cardVM.userFlashcards.collectAsState()
+fun HomeScreen(navController: NavController) {
+    val profileViewModel: ProfileViewModel = viewModel()
+    val flashcardViewModel: FlashcardViewModel = viewModel()
+
+    val currentUser by profileViewModel.currentUser.collectAsState()
+    val userFlashcards by flashcardViewModel.userFlashcards.collectAsState()
+
+    // Load user data and flashcards when screen appears
+    LaunchedEffect(Unit) {
+        profileViewModel.loadUserProfile()
+
+        val userId = FirebaseAuth.getInstance().currentUser?.uid
+        if (!userId.isNullOrBlank()) {
+            flashcardViewModel.loadUserFlashcards(userId)
+        }
+    }
+
+    // Debug
+    LaunchedEffect(userFlashcards) {
+        println("DEBUG HomeScreen: Loaded ${userFlashcards.size} flashcards")
+        println("DEBUG HomeScreen: Current user: ${currentUser?.name}")
+    }
 
     Column(
         modifier = Modifier
@@ -39,7 +54,6 @@ fun HomeScreen(
             .padding(20.dp),
         verticalArrangement = Arrangement.Top
     ) {
-
         // Profile
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -63,11 +77,11 @@ fun HomeScreen(
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                    Text(
-                        text = currentUser?.name?.firstOrNull()?.toString() ?: "U",
-                        color = Color.White,
-                        fontSize = 20.sp
-                    )
+                Text(
+                    text = currentUser?.name?.firstOrNull()?.toString() ?: "U",
+                    color = Color.White,
+                    fontSize = 20.sp
+                )
             }
         }
 
@@ -88,6 +102,7 @@ fun HomeScreen(
             HomeStatBox("Streak", currentUser?.streak ?: 0)
             HomeStatBox("Cards", userFlashcards.size)
         }
+
 
         Spacer(Modifier.height(28.dp))
 

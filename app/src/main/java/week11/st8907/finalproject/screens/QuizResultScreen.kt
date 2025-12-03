@@ -29,6 +29,12 @@ fun QuizResultScreen(
     var pop by remember { mutableStateOf(false) }
     val animatedScale by animateFloatAsState(if (pop) 1.05f else 1f)
 
+    // Calculate XP
+    val baseXp = total * 10
+    val accuracy = if (total > 0) score.toDouble() / total else 0.0
+    val bonusXp = if (accuracy > 0.8) (baseXp * 0.2).toInt() else 0
+    val totalXp = baseXp + bonusXp
+
     LaunchedEffect(Unit) { pop = true }
 
     Column(
@@ -75,6 +81,15 @@ fun QuizResultScreen(
                     },
                     color = Color.White,
                     fontSize = 18.sp
+                )
+
+                Spacer(Modifier.height(8.dp))
+
+                Text(
+                    "Earned $totalXp XP!",
+                    color = Color(0xFFFFD700), // Gold color for XP
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold
                 )
             }
         }

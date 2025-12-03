@@ -6,8 +6,9 @@
  */
 package week11.st8907.finalproject.data.models
 
+import com.google.firebase.Timestamp
 import com.google.firebase.firestore.DocumentId
-import java.util.Date
+import com.google.firebase.firestore.ServerTimestamp
 
 data class Flashcard(
     @DocumentId
@@ -18,8 +19,10 @@ data class Flashcard(
     val tags: List<String> = emptyList(),
     val userId: String = "",
     val deckId: String? = null,
-    val createdAt: Date = Date(),
-    val lastReviewed: Date? = null,
+    @ServerTimestamp
+    val createdAt: Timestamp? = null,
+    @ServerTimestamp
+    val lastReviewed: Timestamp? = null,
     val difficulty: String = "medium", // easy, medium, hard
     val sourceType: String = "manual", // manual, ocr, voice
     val isPublic: Boolean = false

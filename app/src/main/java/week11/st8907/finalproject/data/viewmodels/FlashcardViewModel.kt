@@ -2,17 +2,19 @@ package week11.st8907.finalproject.data.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import week11.st8907.finalproject.data.models.Flashcard
 import week11.st8907.finalproject.data.repositories.FlashcardRepository
+import week11.st8907.finalproject.data.repositories.UserRepository
 
 class FlashcardViewModel : ViewModel() {
-    private val firestore = FirebaseFirestore.getInstance()
     private val flashcardRepository = FlashcardRepository()
+    private val userRepository = UserRepository()
+    private val auth = FirebaseAuth.getInstance()
 
     private val _userFlashcards = MutableStateFlow<List<Flashcard>>(emptyList())
     val userFlashcards: StateFlow<List<Flashcard>> = _userFlashcards.asStateFlow()
@@ -26,6 +28,43 @@ class FlashcardViewModel : ViewModel() {
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
+    // Track study progress
+    fun trackStudyProgress(cardsStudied: Int, correctAnswers: Int, onSuccess: () -> Unit = {}) {
+        viewModelScope.launch {
+            _isLoading.value = true
+
+            val userId = auth.currentUser?.uid
+            if (userId == null) {
+                _errorMessage.value = "User not authenticated"
+                _isLoading.value = false
+                return@launch
+            }
+
+            try {
+                // Calculate XP (10 XP per card, bonus for accuracy)
+                val baseXp = cardsStudied * 10
+                val accuracy = if (cardsStudied > 0) correctAnswers.toDouble() / cardsStudied else 0.0
+                val bonusXp = if (accuracy > 0.8) (baseXp * 0.2).toInt() else 0
+                val totalXp = baseXp + bonusXp
+
+                println("DEBUG FlashcardVM: Tracking study - Cards: $cardsStudied, Correct: $correctAnswers, XP: $totalXp")
+
+                // Update user progress
+                val result = userRepository.updateUserProgress(userId, totalXp)
+                if (result.isSuccess) {
+                    println("DEBUG FlashcardVM: Successfully updated user progress")
+                    onSuccess()
+                } else {
+                    _errorMessage.value = "Failed to update progress: ${result.exceptionOrNull()?.message}"
+                }
+            } catch (e: Exception) {
+                _errorMessage.value = "Error tracking study: ${e.message}"
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
     // CREATE - Create new flashcard
     fun createFlashcard(flashcard: Flashcard, onSuccess: (String) -> Unit = {}) {
         viewModelScope.launch {
@@ -35,6 +74,12 @@ class FlashcardViewModel : ViewModel() {
             val result = flashcardRepository.createFlashcard(flashcard)
             if (result.isSuccess) {
                 onSuccess(result.getOrThrow())
+
+                // Also update user's total cards created
+                if (flashcard.userId.isNotBlank()) {
+                    userRepository.updateTotalCardsCreated(flashcard.userId)
+                }
+
                 // Reload flashcards if we have a userId
                 if (flashcard.userId.isNotBlank()) {
                     loadUserFlashcards(flashcard.userId)
@@ -43,6 +88,25 @@ class FlashcardViewModel : ViewModel() {
                 _errorMessage.value = "Failed to create flashcard: ${result.exceptionOrNull()?.message}"
             }
             _isLoading.value = false
+        }
+    }
+
+    // Daily study XP
+    fun awardDailyStudyXP(userId: String, onSuccess: () -> Unit = {}) {
+        viewModelScope.launch {
+            try {
+                // Award 20 XP for daily study
+                val result = userRepository.updateUserProgress(userId, 20)
+
+                if (result.isSuccess) {
+                    onSuccess()
+                } else {
+                    val error = result.exceptionOrNull()?.message ?: "Unknown error"
+                    _errorMessage.value = "Failed to update progress: $error"
+                }
+            } catch (e: Exception) {
+                _errorMessage.value = "Error: ${e.message}"
+            }
         }
     }
 

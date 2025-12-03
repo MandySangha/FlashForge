@@ -2,12 +2,12 @@ package week11.st8907.finalproject.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -19,12 +19,15 @@ import week11.st8907.finalproject.data.viewmodels.ProfileViewModel
 import week11.st8907.finalproject.ui.theme.NeonPink
 import week11.st8907.finalproject.ui.theme.NeonPurple
 import week11.st8907.finalproject.ui.theme.NeonText
+import android.widget.Toast
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditProfileScreen(navController: NavController) {
     val profileViewModel: ProfileViewModel = viewModel()
+    val context = LocalContext.current
 
     // Load user data when screen appears
     LaunchedEffect(Unit) {
@@ -36,17 +39,15 @@ fun EditProfileScreen(navController: NavController) {
     val errorMessage by profileViewModel.errorMessage.collectAsState()
 
     var name by remember { mutableStateOf("") }
-    var email by remember { mutableStateOf("") }
 
     // Update form when user data loads
     LaunchedEffect(currentUser) {
         name = currentUser?.name ?: ""
-        email = currentUser?.email ?: ""
     }
 
-    // Validate form
-    val isFormValid = name.isNotBlank() && email.isNotBlank() && email.contains("@")
-    val hasChanges = name != currentUser?.name || email != currentUser?.email
+    // Validate form - only name is required
+    val isFormValid = name.isNotBlank()
+    val hasChanges = name != currentUser?.name
 
     Scaffold(
         topBar = {
@@ -62,7 +63,7 @@ fun EditProfileScreen(navController: NavController) {
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
-                            Icons.Default.ArrowBack,
+                            Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
                             tint = NeonText
                         )
@@ -77,7 +78,8 @@ fun EditProfileScreen(navController: NavController) {
                 .fillMaxSize()
                 .padding(paddingValues)
                 .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Top
         ) {
             // Name Field
             TextField(
@@ -99,40 +101,23 @@ fun EditProfileScreen(navController: NavController) {
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Spacer(Modifier.height(20.dp))
-
-            // Email Field
-            TextField(
-                value = email,
-                onValueChange = { email = it },
-                label = { Text("Email", color = Color.LightGray) },
-                singleLine = true,
-                colors = TextFieldDefaults.colors(
-                    focusedIndicatorColor = NeonPink,
-                    unfocusedIndicatorColor = NeonPurple,
-                    cursorColor = NeonPink,
-                    focusedContainerColor = Color.Transparent,
-                    unfocusedContainerColor = Color.Transparent,
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White,
-                    focusedLabelColor = NeonPink,
-                    unfocusedLabelColor = Color.LightGray
-                ),
-                modifier = Modifier.fillMaxWidth()
-            )
-
             Spacer(Modifier.height(32.dp))
 
             // Save Button
             PrimaryButton(
                 text = if (isLoading) "Saving..." else "Save Changes",
                 onClick = {
-                    profileViewModel.updateUserProfile(
-                        name = name.trim(),
-                        email = email.trim(),
-                        onSuccess = { navController.popBackStack() }
-                    )
-                },
+                    if (isFormValid && hasChanges) {
+                        profileViewModel.updateUserProfile(
+                            name = name.trim(),
+                            onSuccess = {
+                                Toast.makeText(context, "Profile updated", Toast.LENGTH_SHORT)
+                                    .show()
+                                navController.popBackStack()
+                            }
+                        )
+                    }
+                }
             )
 
             Spacer(Modifier.height(16.dp))

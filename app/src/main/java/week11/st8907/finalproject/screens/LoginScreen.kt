@@ -74,7 +74,7 @@ fun LoginScreen(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
 
-        Text("Welcome On FlashForge", fontSize = 32.sp, color = NeonText)
+        Text("Welcome to FlashForge", fontSize = 32.sp, color = NeonText)
 
         Spacer(Modifier.height(20.dp))
 

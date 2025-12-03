@@ -32,7 +32,6 @@ class AuthViewModel(
     fun updatePassword(value: String) { _password.value = value }
     fun updateConfirmPassword(value: String) { _confirmPassword.value = value }
 
-
     fun login() {
         viewModelScope.launch {
             _authState.value = AuthState.Loading
@@ -40,6 +39,7 @@ class AuthViewModel(
 
             if (result is AuthState.Success) {
                 val uid = auth.currentUser!!.uid
+                println("Login successful for user: $uid")
 
                 val user = User(
                     userId = uid,
@@ -47,13 +47,23 @@ class AuthViewModel(
                     name = email.value.substringBefore("@")
                 )
 
-                userRepo.createOrUpdateUser(user)
+                // This will ONLY create if user doesn't exist
+                val createResult = userRepo.createUserIfNotExists(user)
+
+                if (createResult.isSuccess) {
+                    if (createResult.getOrNull() == true) {
+                        println("New user created with name: ${user.name}")
+                    } else {
+                        println("ℹUser already exists, preserved existing profile")
+                    }
+                } else {
+                    println("Could not ensure user exists: ${createResult.exceptionOrNull()?.message}")
+                }
             }
 
             _authState.value = result
         }
     }
-
 
     fun register() {
         viewModelScope.launch {
@@ -62,6 +72,7 @@ class AuthViewModel(
 
             if (result is AuthState.Success) {
                 val uid = auth.currentUser!!.uid
+                println("Registration successful for user: $uid")
 
                 val user = User(
                     userId = uid,
@@ -69,7 +80,13 @@ class AuthViewModel(
                     name = email.value.substringBefore("@")
                 )
 
-                userRepo.createOrUpdateUser(user)
+                userRepo.createUserIfNotExists(user).onSuccess { created ->
+                    if (created) {
+                        println("New user created during registration: ${user.name}")
+                    } else {
+                        println("User already existed during registration, preserved existing profile")
+                    }
+                }
             }
 
             _authState.value = result
