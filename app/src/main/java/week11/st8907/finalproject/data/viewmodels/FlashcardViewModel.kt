@@ -28,31 +28,36 @@ class FlashcardViewModel : ViewModel() {
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
-    // Track study progress
+    private val _questionText = MutableStateFlow("")
+    val questionText: StateFlow<String> = _questionText.asStateFlow()
+
+    private val _answerText = MutableStateFlow("")
+    val answerText: StateFlow<String> = _answerText.asStateFlow()
+
+    fun setExtractedText(extracted: String) {
+        val lines = extracted.lines()
+        val q = lines.firstOrNull()?.trim().orEmpty()
+        val a = if (lines.size > 1) lines.drop(1).joinToString("\n").trim() else ""
+        _questionText.value = q
+        _answerText.value = a
+    }
+
     fun trackStudyProgress(cardsStudied: Int, correctAnswers: Int, onSuccess: () -> Unit = {}) {
         viewModelScope.launch {
             _isLoading.value = true
-
             val userId = auth.currentUser?.uid
             if (userId == null) {
                 _errorMessage.value = "User not authenticated"
                 _isLoading.value = false
                 return@launch
             }
-
             try {
-                // Calculate XP (10 XP per card, bonus for accuracy)
                 val baseXp = cardsStudied * 10
                 val accuracy = if (cardsStudied > 0) correctAnswers.toDouble() / cardsStudied else 0.0
                 val bonusXp = if (accuracy > 0.8) (baseXp * 0.2).toInt() else 0
                 val totalXp = baseXp + bonusXp
-
-                println("DEBUG FlashcardVM: Tracking study - Cards: $cardsStudied, Correct: $correctAnswers, XP: $totalXp")
-
-                // Update user progress
                 val result = userRepository.updateUserProgress(userId, totalXp)
                 if (result.isSuccess) {
-                    println("DEBUG FlashcardVM: Successfully updated user progress")
                     onSuccess()
                 } else {
                     _errorMessage.value = "Failed to update progress: ${result.exceptionOrNull()?.message}"
@@ -65,23 +70,15 @@ class FlashcardViewModel : ViewModel() {
         }
     }
 
-    // CREATE - Create new flashcard
     fun createFlashcard(flashcard: Flashcard, onSuccess: (String) -> Unit = {}) {
         viewModelScope.launch {
             _isLoading.value = true
             _errorMessage.value = null
-
             val result = flashcardRepository.createFlashcard(flashcard)
             if (result.isSuccess) {
                 onSuccess(result.getOrThrow())
-
-                // Also update user's total cards created
                 if (flashcard.userId.isNotBlank()) {
                     userRepository.updateTotalCardsCreated(flashcard.userId)
-                }
-
-                // Reload flashcards if we have a userId
-                if (flashcard.userId.isNotBlank()) {
                     loadUserFlashcards(flashcard.userId)
                 }
             } else {
@@ -91,13 +88,10 @@ class FlashcardViewModel : ViewModel() {
         }
     }
 
-    // Daily study XP
     fun awardDailyStudyXP(userId: String, onSuccess: () -> Unit = {}) {
         viewModelScope.launch {
             try {
-                // Award 20 XP for daily study
                 val result = userRepository.updateUserProgress(userId, 20)
-
                 if (result.isSuccess) {
                     onSuccess()
                 } else {
@@ -110,45 +104,26 @@ class FlashcardViewModel : ViewModel() {
         }
     }
 
-    // READ - Load all user flashcards
     fun loadUserFlashcards(userId: String) {
         viewModelScope.launch {
-            println("DEBUG VM: Starting loadUserFlashcards for userId: $userId")
             _isLoading.value = true
             _errorMessage.value = null
-
             try {
                 flashcardRepository.getUserFlashcards(userId).collect { flashcards ->
-                    println("DEBUG VM: Received ${flashcards.size} flashcards from repository")
-
-                    // Debug each flashcard
-                    flashcards.forEachIndexed { index, flashcard ->
-                        println("DEBUG VM: Flashcard $index - ID: '${flashcard.cardId}'")
-                        println("DEBUG VM: Flashcard $index - Question: '${flashcard.question}'")
-                        println("DEBUG VM: Flashcard $index - UserId: '${flashcard.userId}'")
-                    }
-
-                    // Update state
                     _userFlashcards.value = flashcards
-                    println("DEBUG VM: Updated _userFlashcards with ${flashcards.size} items")
                 }
             } catch (e: Exception) {
-                println("DEBUG VM: ERROR in loadUserFlashcards: ${e.message}")
-                e.printStackTrace()
                 _errorMessage.value = "Failed to load flashcards: ${e.message}"
             } finally {
                 _isLoading.value = false
-                println("DEBUG VM: Finished loadUserFlashcards")
             }
         }
     }
 
-    // READ - Load single flashcard
     fun loadFlashcard(cardId: String) {
         viewModelScope.launch {
             _isLoading.value = true
             _errorMessage.value = null
-
             val result = flashcardRepository.getFlashcard(cardId)
             if (result.isSuccess) {
                 _currentFlashcard.value = result.getOrThrow()
@@ -159,16 +134,13 @@ class FlashcardViewModel : ViewModel() {
         }
     }
 
-    // UPDATE - Update flashcard
     fun updateFlashcard(flashcard: Flashcard, onSuccess: () -> Unit = {}) {
         viewModelScope.launch {
             _isLoading.value = true
             _errorMessage.value = null
-
             val result = flashcardRepository.updateFlashcard(flashcard)
             if (result.isSuccess) {
                 onSuccess()
-                // Reload flashcards if we have a userId
                 if (flashcard.userId.isNotBlank()) {
                     loadUserFlashcards(flashcard.userId)
                 }
@@ -179,12 +151,10 @@ class FlashcardViewModel : ViewModel() {
         }
     }
 
-    // DELETE - Delete flashcard
     fun deleteFlashcard(cardId: String, userId: String, onSuccess: () -> Unit = {}) {
         viewModelScope.launch {
             _isLoading.value = true
             _errorMessage.value = null
-
             val result = flashcardRepository.deleteFlashcard(cardId)
             if (result.isSuccess) {
                 onSuccess()
@@ -196,7 +166,6 @@ class FlashcardViewModel : ViewModel() {
         }
     }
 
-    // SEARCH - Search flashcards
     fun searchFlashcards(userId: String, query: String, onResult: (List<Flashcard>) -> Unit) {
         viewModelScope.launch {
             _isLoading.value = true

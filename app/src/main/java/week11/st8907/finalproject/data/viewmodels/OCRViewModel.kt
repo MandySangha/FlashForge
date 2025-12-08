@@ -18,6 +18,12 @@ class OCRViewModel : ViewModel() {
     private val _recognizedText = MutableStateFlow("")
     val recognizedText = _recognizedText.asStateFlow()
 
+    private val _questionText = MutableStateFlow("")
+    val questionText = _questionText.asStateFlow()
+
+    private val _answerText = MutableStateFlow("")
+    val answerText = _answerText.asStateFlow()
+
     fun processImageFromBitmap(bitmap: Bitmap) {
         Log.d("OCR_DEBUG", "Bitmap received for OCR")
         val image = InputImage.fromBitmap(bitmap, 0)
@@ -40,8 +46,17 @@ class OCRViewModel : ViewModel() {
 
     fun clearRecognizedText() {
         _recognizedText.value = ""
+        _questionText.value = ""
+        _answerText.value = ""
     }
 
+    private fun splitExtractedText(fullText: String) {
+        val lines = fullText.lines()
+        val q = lines.firstOrNull()?.trim().orEmpty()
+        val a = if (lines.size > 1) lines.drop(1).joinToString("\n").trim() else ""
+        _questionText.value = q
+        _answerText.value = a
+    }
 
     private fun runOCR(image: InputImage) {
         Log.d("OCR_DEBUG", "Starting ML Kit text recognition...")
@@ -50,6 +65,7 @@ class OCRViewModel : ViewModel() {
             .addOnSuccessListener { result ->
                 Log.d("OCR_DEBUG", "OCR SUCCESS: ${result.text}")
                 _recognizedText.value = result.text
+                splitExtractedText(result.text)
             }
             .addOnFailureListener { e ->
                 Log.e("OCR_DEBUG", "OCR FAILED", e)

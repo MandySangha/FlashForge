@@ -27,10 +27,15 @@ fun CameraPreview(
         Executors.newSingleThreadExecutor()
     }
 
+    val imageCapture = remember {
+        ImageCapture.Builder()
+            .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
+            .build()
+    }
+
     AndroidView(
         modifier = modifier,
         factory = { androidViewContext ->
-
             val previewView = PreviewView(androidViewContext)
 
             val cameraProviderFuture = ProcessCameraProvider.getInstance(androidViewContext)
@@ -42,10 +47,6 @@ fun CameraPreview(
                 val previewUseCase = Preview.Builder().build().apply {
                     setSurfaceProvider(previewView.surfaceProvider)
                 }
-
-                val imageCapture = ImageCapture.Builder()
-                    .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
-                    .build()
 
                 try {
                     cameraProvider.unbindAll()
@@ -65,9 +66,7 @@ fun CameraPreview(
                         outputOptions,
                         cameraExecutor,
                         object : ImageCapture.OnImageSavedCallback {
-                            override fun onError(exc: ImageCaptureException) {
-                                exc.printStackTrace()
-                            }
+                            override fun onError(exc: ImageCaptureException) {}
 
                             override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
                                 val bitmap = BitmapFactory.decodeFile(file.absolutePath)

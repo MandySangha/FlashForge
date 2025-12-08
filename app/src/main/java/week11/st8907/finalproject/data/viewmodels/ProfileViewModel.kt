@@ -92,7 +92,7 @@ class ProfileViewModel(
     }
 
     // ---------------------------------------------------------------------
-    // UPDATE USER PROFILE - FIXED VERSION
+    // UPDATE USER PROFILE -
     // ---------------------------------------------------------------------
     fun updateUserProfile(
         name: String,

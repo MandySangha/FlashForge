@@ -27,12 +27,14 @@ fun CreateFlashCardScreen(
     flashcardViewModel: FlashcardViewModel,
     ocrViewModel: OCRViewModel
 ) {
-    val scannedText = ocrViewModel.recognizedText.collectAsState().value
+    val scannedQuestion = ocrViewModel.questionText.collectAsState().value
+    val scannedAnswer = ocrViewModel.answerText.collectAsState().value
+
     val currentUser = FirebaseAuth.getInstance().currentUser
     val userId = currentUser?.uid ?: ""
 
-    var question by remember { mutableStateOf(scannedText) }
-    var answer by remember { mutableStateOf("") }
+    var question by remember { mutableStateOf(scannedQuestion) }
+    var answer by remember { mutableStateOf(scannedAnswer) }
     var selectedCategory by remember { mutableStateOf("General") }
     var categoryExpanded by remember { mutableStateOf(false) }
     var showDialog by remember { mutableStateOf(false) }
@@ -55,10 +57,9 @@ fun CreateFlashCardScreen(
         "Personal"
     )
 
-    LaunchedEffect(scannedText) {
-        if (scannedText.isNotBlank()) {
-            question = scannedText
-        }
+    LaunchedEffect(scannedQuestion, scannedAnswer) {
+        if (scannedQuestion.isNotBlank()) question = scannedQuestion
+        if (scannedAnswer.isNotBlank()) answer = scannedAnswer
     }
 
     Column(
@@ -75,7 +76,6 @@ fun CreateFlashCardScreen(
 
         Spacer(Modifier.height(20.dp))
 
-        // Question Field
         TextField(
             value = question,
             onValueChange = { question = it },
@@ -93,7 +93,6 @@ fun CreateFlashCardScreen(
 
         Spacer(Modifier.height(20.dp))
 
-        // Answer Field
         TextField(
             value = answer,
             onValueChange = { answer = it },
@@ -111,7 +110,6 @@ fun CreateFlashCardScreen(
 
         Spacer(Modifier.height(20.dp))
 
-        // Category Dropdown
         Box(
             modifier = Modifier.fillMaxWidth()
         ) {
@@ -160,7 +158,6 @@ fun CreateFlashCardScreen(
 
         Spacer(Modifier.height(30.dp))
 
-        // Error Message
         errorMessage?.let { message ->
             Text(
                 text = message,
@@ -172,7 +169,6 @@ fun CreateFlashCardScreen(
             )
         }
 
-        // Save Button
         PrimaryButton(
             text = "Save",
             onClick = {
